@@ -1,0 +1,1 @@
+This document is for planning purposes for PhotoLineArt.com
