@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PhotoLineArt - Turn Photos into Coloring Pages</title>
+    <!-- Load Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Load Google Fonts: Playfair Display (Serif) and Inter (Sans-Serif) -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:ital,wght@0;500;0,600;1,500;1,600&display=swap" rel="stylesheet">
+    
+    <style>
+        /* Define custom colors and fonts based on the Style Guide */
+        :root {
+            --color-base: #F7F3EC;
+            --color-text-primary: #1F2933;
+            --color-text-secondary: #6B7280;
+            --color-cta-primary: #1D5C63;
+            --color-cta-hover: #17494E;
+            --color-accent-clay: #D9835F;
+            --color-soft-gold: #E6B35A;
+            --color-border: #E5E7EB;
+            --color-final-cta-bg: #EDF4F5; /* Light tint of primary */
+        }
+
+        .font-serif-heading {
+            font-family: 'Playfair Display', Georgia, 'Times New Roman', serif;
+        }
+        .font-sans-body {
+            font-family: 'Inter', system-ui, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.7;
+        }
+
+        /* Base styles */
+        body {
+            background-color: var(--color-base);
+            color: var(--color-text-primary);
+            font-family: 'Inter', system-ui, 'Segoe UI', Roboto, sans-serif;
+            line-height: 1.7;
+        }
+
+        h1, h2 {
+            font-family: 'Playfair Display', Georgia, 'Times New Roman', serif;
+            font-weight: 600;
+            line-height: 1.25;
+        }
+
+        /* --- Custom Spacing Rule 1: Add space before H2 headers --- */
+        h2 {
+            /* Large top margin to separate it from the content above (e.g., CTA button or previous paragraph) */
+            margin-top: 4rem; /* Equivalent to mt-16 */
+            margin-bottom: 0.5rem; /* Maintain some vertical rhythm with the subtitle */
+        }
+
+        /* --- Custom Spacing Rule 2: Add space after main body text (text-lg/text-xl) --- */
+        /* Applying this directly via Tailwind classes in the HTML for more granular control,
+           but generally applying mb-10 (2.5rem) after the main text blocks.
+        */
+        
+        /* Custom Wordmark Styling */
+        .wordmark span:first-child {
+            font-weight: 500; /* Regular weight for "Photo" */
+        }
+        .wordmark span:last-child {
+            font-weight: 600; /* Semibold for "LineArt" */
+            font-style: italic;
+        }
+
+        /* Primary Button Styling */
+        .btn-primary {
+            background-color: var(--color-cta-primary);
+            color: #FFFFFF;
+            transition: background-color 0.2s, transform 0.1s;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.08);
+        }
+        .btn-primary:hover {
+            background-color: var(--color-cta-hover);
+            transform: translateY(-1px);
+        }
+
+        /* Utility classes for consistency */
+        .container-section {
+            max-width: 72rem; /* Tailwind's max-w-6xl */
+            margin-left: auto;
+            margin-right: auto;
+            padding-left: 2rem;
+            padding-right: 2rem;
+        }
+
+        .section-padding {
+            padding-top: 5rem;
+            padding-bottom: 5rem;
+        }
+
+        section:not(:first-of-type) {
+            margin-top: 4rem;
+        }
+
+        section + section {
+            padding-top: 5rem;
+        }
+        
+        /* Mock Image/Art Placeholder Styling */
+        .art-mock {
+            @apply bg-white p-6 rounded-xl shadow-xl border border-gray-100;
+        }
+        .art-frame {
+            @apply h-56 md:h-80 w-full bg-gray-50 border border-dashed border-gray-300 rounded-lg flex items-center justify-center text-sm text-gray-400 font-serif-heading italic;
+        }
+    </style>
+</head>
+
+<body class="font-sans-body antialiased" style="background-color: var(--color-base);">
+
+    <!-- 1. Header (Slim Header) -->
+    <header class="bg-white border-b border-[#E5E7EB]">
+        <div class="container-section h-16 flex items-center justify-between">
+            <div class="wordmark font-serif-heading text-xl tracking-wide text-[#1F2933]">
+                <span>Photo</span><span class="italic font-semibold">LineArt</span>
+            </div>
+            <nav class="hidden md:flex space-x-6 text-[#6B7280] text-sm font-medium">
+                <a href="#how-it-works" class="hover:text-current transition">How it works</a>
+                <a href="#examples" class="hover:text-current transition">Examples</a>
+                <a href="#" class="text-[#1D5C63] hover:text-[#17494E] transition">Login</a>
+            </nav>
+        </div>
+    </header>
+
+    <!-- 1. Hero Section (Updated to Stacked & Centered Layout) -->
+    <section class="section-padding" style="background-color: var(--color-base);">
+        <div class="container-section">
+            
+            <!-- Main Text Content (Centered and constrained) -->
+            <div class="max-w-4xl mx-auto text-center space-y-8">
+                <!-- H1 is the first element, no top margin needed -->
+                <h1 class="text-4xl sm:text-5xl lg:text-6xl text-[#1F2933] font-serif-heading leading-tight">
+                    Turn one photo into a coloring page you’ll keep forever.
+                </h1>
+
+                <p class="text-xl text-[#1F2933] font-medium leading-relaxed mb-10">
+                    In minutes, our AI turns a favorite photo into high-fidelity line art, <strong class="text-[#D9835F]">complete with specific Faber-Castell color tips.</strong>
+                    Not generic patterns. Your life, on paper. First page is free.
+                </p>
+
+                <!-- Bullet points - added more horizontal padding on mobile (sm:px-0) and bottom margin (mb-4)-->
+                <ul class="text-lg space-y-3 text-[#1F2933] list-disc list-inside text-left mx-auto max-w-2xl px-4 sm:px-0 mb-4">
+                    <li class="pl-2"><strong>Transform</strong> real moments—family, pets, travel—into pages you’ll actually want to color.</li>
+                    <li class="pl-2">Get specific pencil guidance matched to your exact photo and Faber-Castell set.</li>
+                    <li class="pl-2">Download a print-ready PDF and start coloring tonight.</li>
+                </ul>
+
+                <div class="flex flex-col sm:flex-row space-y-4 sm:space-y-0 sm:space-x-4 pt-4 items-center justify-center">
+                    <a href="#hero-form" class="btn-primary rounded-full px-8 py-4 text-lg font-semibold w-full sm:w-auto text-center max-w-sm">
+                        Turn my photo into a free page
+                    </a>
+                </div>
+                <p class="text-sm text-[#6B7280] font-medium">
+                    No card. One photo. About 2 minutes.
+                </p>
+            </div>
+
+            <!-- Hero Form Card (Now stacked below the content, centered, and constrained) -->
+            <div id="hero-form" class="max-w-xl mx-auto bg-white p-8 sm:p-10 lg:p-12 rounded-xl shadow-2xl border border-[#E5E7EB] mt-16">
+                <h3 class="text-2xl font-serif-heading text-[#1F2933] mb-6 text-center">Start with one photo you love</h3>
+                
+                <form id="upload-form" class="space-y-6">
+                    <!-- Email Field -->
+                    <div>
+                        <label for="email" class="block text-sm font-medium text-[#1F2933] mb-1">Email address</label>
+                        <input type="email" id="email" name="email" class="w-full border border-[#E5E7EB] rounded-lg p-3 focus:ring-[#1D5C63] focus:border-[#1D5C63]" placeholder="you@example.com" required>
+                        <p class="mt-1 text-xs text-[#6B7280]">We’ll send your finished **PDF** and tips here.</p>
+                    </div>
+
+                    <!-- Upload Field -->
+                    <div>
+                        <label for="photo" class="block text-sm font-medium text-[#1F2933] mb-1">Upload photo</label>
+                        <input type="file" id="photo" name="photo" accept=".jpg,.png,.jpeg" class="w-full border border-[#E5E7EB] rounded-lg p-3 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-[#EDF4F5] file:file:text-[#1D5C63] hover:file:bg-[#E5E7EB] cursor-pointer" required>
+                        <p class="mt-1 text-xs text-[#6B7280]">JPG or PNG, up to 10 MB. Clear, well-lit photos work best.</p>
+                    </div>
+
+                    <!-- Checkbox -->
+                    <div class="pt-2">
+                        <label class="flex items-center text-sm text-[#1F2933]">
+                            <input type="checkbox" class="h-4 w-4 text-[#1D5C63] border-gray-300 rounded focus:ring-[#1D5C63]">
+                            <span class="ml-2">Send me advanced coloring ideas and new layout styles</span>
+                        </label>
+                    </div>
+
+                    <button type="submit" id="submit-button" class="btn-primary rounded-full px-8 py-3 text-lg font-semibold w-full mt-6">
+                        Turn my photo into a free page
+                    </button>
+                    
+                    <!-- Feedback Message -->
+                    <div id="feedback-message" class="text-center p-3 rounded-lg text-sm hidden"></div>
+                </form>
+                
+                <p class="text-center text-xs text-[#6B7280] mt-6 pt-4 border-t border-[#E5E7EB]">
+                    Your photo stays private. You can delete it with one click.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- 2. Problem / Agitation Section -->
+    <section class="section-padding bg-white">
+        <div class="container-section max-w-4xl mx-auto text-center">
+            <!-- H2 gets margin-top from CSS rule above -->
+            <h2 class="text-3xl sm:text-4xl text-[#1F2933] font-serif-heading">Why most adult coloring books end up on a shelf</h2>
+            <h3 class="text-xl mt-4 mb-10 text-[#6B7280] font-medium">They calm your hands. Not your heart.</h3>
+            
+            <div class="mt-10 space-y-10">
+                <!-- Added mb-10 to increase space after this key paragraph -->
+                <p class="text-lg leading-relaxed text-[#1F2933] mb-10">
+                    You buy a beautiful “adult coloring book,” sit down to relax… and it’s page after page of random mandalas, forests, and quotes that mean nothing to you.
+                    You color a few, feel oddly flat, and the book disappears into a drawer.
+                </p>
+
+                <div class="grid sm:grid-cols-3 gap-8 text-left">
+                    <div class="bg-[#F7F3EC] p-6 rounded-xl border-l-4 border-[#D9835F] space-y-2">
+                        <p class="font-semibold text-[#1F2933]">Generic Calm</p>
+                        <p class="text-sm text-[#6B7280]">You’re coloring someone else’s idea of calm, not your own memories.</p>
+                    </div>
+                    <div class="bg-[#F7F3EC] p-6 rounded-xl border-l-4 border-[#D9835F] space-y-2">
+                        <p class="font-semibold text-[#1F2933]">Lacks Refinement</p>
+                        <p class="text-sm text-[#6B7280]">The art feels childish or noisy instead of thoughtful and refined.</p>
+                    </div>
+                    <div class="bg-[#F7F3EC] p-6 rounded-xl border-l-4 border-[#D9835F] space-y-2">
+                        <p class="font-semibold text-[#1F2933]">Disposable Ritual</p>
+                        <p class="text-sm text-[#6B7280]">After a week, the book is clutter, not a ritual.</p>
+                    </div>
+                </div>
+
+                <!-- Added mb-10 to increase space after this key paragraph -->
+                <p class="text-lg leading-relaxed pt-4 font-semibold text-[#1D5C63] mb-10">
+                    Now picture this instead: your grandmother’s kitchen, your dog on that favorite trail, or the café from your last big trip—quietly waiting on the page, ready to be brought back to life, stroke by stroke.
+                </p>
+            </div>
+        </div>
+    </section>
+
+    <!-- 3. Solution / Benefits Section -->
+    <section class="section-padding" style="background-color: var(--color-base);" id="how-it-works">
+        <div class="container-section">
+            <!-- H2 gets margin-top from CSS rule above -->
+            <h2 class="text-3xl sm:text-4xl text-[#1F2933] font-serif-heading text-center">A coloring book made from your life</h2>
+            <h3 class="text-xl mt-4 mb-12 text-[#6B7280] font-medium text-center">Turn “lost in your camera roll” photos into a ritual you actually look forward to.</h3>
+
+            <div class="grid lg:grid-cols-3 gap-10 mt-12 items-center">
+                <!-- Left: Before/After Text -->
+                <div class="lg:col-span-1 space-y-8 p-6 bg-white rounded-xl shadow-lg border border-[#E5E7EB]">
+                    <div class="space-y-2">
+                        <p class="text-sm font-semibold text-[#D9835F] uppercase tracking-wider">Before</p>
+                        <p class="text-lg font-medium text-[#1F2933]">
+                            Your best moments are buried in phone backups and old albums. They’re important, but **they are rarely seen.**
+                        </p>
+                    </div>
+                    <hr class="border-[#E5E7EB]">
+                    <div class="space-y-2">
+                        <p class="text-sm font-semibold text-[#1D5C63] uppercase tracking-wider">After</p>
+                        <p class="text-lg font-medium text-[#1F2933]">
+                            PhotoLineArt turns those same moments into gallery-quality line drawings with guided colors. You slow down. You remember. You create something **tangible.**
+                        </p>
+                    </div>
+                    <p class="text-sm italic text-[#6B7280] pt-4">
+                        <span class="font-semibold">Bridge:</span> Upload one photo. We handle the line art, the layout, and Faber-Castell recommendations tuned to your exact image and pencil set.
+                    </p>
+                </div>
+
+                <!-- Right: How It Works in 3 Steps -->
+                <div class="lg:col-span-2 grid md:grid-cols-3 gap-8">
+                    <!-- Step 1 -->
+                    <div class="space-y-4 text-center">
+                        <div class="mx-auto w-16 h-16 rounded-full bg-white flex items-center justify-center border-4 border-[#D9835F] text-[#D9835F] text-2xl font-bold font-serif-heading">1</div>
+                        <h4 class="text-xl font-semibold font-serif-heading text-[#1F2933]">Upload a favorite photo</h4>
+                        <p class="text-sm text-[#6B7280]">Choose a clear shot of a person, pet, place, or memory you don’t want to lose to the scroll.</p>
+                    </div>
+                    <!-- Step 2 -->
+                    <div class="space-y-4 text-center">
+                        <div class="mx-auto w-16 h-16 rounded-full bg-white flex items-center justify-center border-4 border-[#D9835F] text-[#D9835F] text-2xl font-bold font-serif-heading">2</div>
+                        <h4 class="text-xl font-semibold font-serif-heading text-[#1F2933]">We create the art and color map</h4>
+                        <p class="text-sm text-[#6B7280]">Our AI converts your photo into detailed line art and a companion page with Faber-Castell suggestions matched to your chosen set.</p>
+                    </div>
+                    <!-- Step 3 -->
+                    <div class="space-y-4 text-center">
+                        <div class="mx-auto w-16 h-16 rounded-full bg-white flex items-center justify-center border-4 border-[#D9835F] text-[#D9835F] text-2xl font-bold font-serif-heading">3</div>
+                        <h4 class="text-xl font-semibold font-serif-heading text-[#1F2933]">Download, print, and start coloring</h4>
+                        <p class="text-sm text-[#6B7280]">Get a high-resolution PDF sized for standard letter/A4. Print at home and start coloring the same day.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Inline CTA -->
+            <div class="mt-20 text-center mb-10"> <!-- Added mb-10 here -->
+                <a href="#hero-form" class="btn-primary rounded-full px-10 py-4 text-xl font-semibold inline-block">
+                    Show me my photo as line art
+                </a>
+                <p class="text-sm text-[#6B7280] mt-3">Free trial: one full-resolution page + expert tips, no card.</p>
+            </div>
+
+            <!-- Core Benefit Bullets -->
+            <div class="grid md:grid-cols-2 lg:grid-cols-4 gap-6 mt-16 pt-8 border-t border-[#E5E7EB]">
+                <div class="space-y-1">
+                    <p class="text-lg font-semibold text-[#1F2933]">Deeply personal</p>
+                    <p class="text-sm text-[#6B7280]">Every page starts with a real memory—family, pets, trips, tiny everyday scenes.</p>
+                </div>
+                <div class="space-y-1">
+                    <p class="text-lg font-semibold text-[#1F2933]">Built for colored pencils</p>
+                    <p class="text-sm text-[#6B7280]">Line weight, detail, and white space tuned for longer, focused sessions.</p>
+                </div>
+                <div class="space-y-1">
+                    <p class="text-lg font-semibold text-[#1F2933]">Guided, not guessed</p>
+                    <p class="text-sm text-[#6B7280]">Specific Faber-Castell pencil numbers for skin, sky, stone, foliage, and more.</p>
+                </div>
+                <div class="space-y-1">
+                    <p class="text-lg font-semibold text-[#1F2933]">Gift-ready in an afternoon</p>
+                    <p class="text-sm text-[#6B7280]">Print, bind, and wrap a book that **is uniquely yours.**</p>
+                </div>
+            </div>
+
+        </div>
+    </section>
+
+    <!-- 4. Social Proof & Trust Section -->
+    <section class="section-padding bg-white">
+        <div class="container-section">
+            <!-- H2 gets margin-top from CSS rule above -->
+            <h2 class="text-3xl sm:text-4xl text-[#1F2933] font-serif-heading text-center">What people are coloring with PhotoLineArt</h2>
+            <h3 class="text-xl mt-4 mb-12 text-[#6B7280] font-medium text-center">Real photos. Real pages. Real rituals.</h3>
+
+            <!-- Testimonials -->
+            <div class="grid lg:grid-cols-3 gap-8 mt-12 mb-10"> <!-- Added mb-10 here -->
+                <blockquote class="bg-[#F7F3EC] p-8 rounded-xl shadow-lg border border-[#E5E7EB]">
+                    <p class="text-xl italic text-[#1F2933]">
+                        “In one evening I turned a folder of old family photos into six pages my sister and I now color together on video calls. It feels like visiting our childhood.”
+                    </p>
+                    <footer class="mt-4 font-semibold text-[#1D5C63]">
+                        — Elena K., 52, Seattle
+                    </footer>
+                </blockquote>
+                <blockquote class="bg-[#F7F3EC] p-8 rounded-xl shadow-lg border border-[#E5E7EB]">
+                    <p class="text-xl italic text-[#1F2933]">
+                        “I made a small book from our honeymoon pictures. We color one page every Sunday. It’s our reset button.”
+                    </p>
+                    <footer class="mt-4 font-semibold text-[#1D5C63]">
+                        — Marcus L., 38, Chicago
+                    </footer>
+                </blockquote>
+                <blockquote class="bg-[#F7F3EC] p-8 rounded-xl shadow-lg border border-[#E5E7EB]">
+                    <p class="text-xl italic text-[#1F2933]">
+                        “I’m not an artist, but the Faber-Castell tips told me exactly which pencils to use. The pages look grown-up, not cutesy. It lives on my coffee table, not in a box.”
+                    </p>
+                    <footer class="mt-4 font-semibold text-[#1D5C63]">
+                        — Priya S., 47, Boston
+                    </footer>
+                </blockquote>
+            </div>
+
+            <!-- Mini "By the Numbers" -->
+            <div class="text-center mt-20 pt-8 border-t border-[#E5E7EB] mb-10"> <!-- Added mb-10 here -->
+                <div class="flex flex-col sm:flex-row justify-center space-y-4 sm:space-y-0 sm:space-x-12">
+                    <p class="text-2xl font-bold font-serif-heading text-[#1F2933]">
+                        <span class="text-4xl text-[#E6B35A]">1000s</span> of pages created
+                    </p>
+                    <p class="text-2xl font-bold font-serif-heading text-[#1F2933]">
+                        <span class="text-4xl text-[#E6B35A]">9/10</span> trial users color a page
+                    </p>
+                </div>
+            </div>
+
+            <!-- Embedded CTA -->
+            <div class="mt-20 text-center">
+                <a href="#hero-form" class="btn-primary rounded-full px-12 py-5 text-xl font-semibold inline-block">
+                    Create my free coloring page
+                </a>
+                <p class="text-sm text-[#6B7280] mt-3">Start with one photo that still makes you pause.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- 5. Differentiation Section -->
+    <section class="section-padding" style="background-color: var(--color-base);">
+        <div class="container-section">
+            <!-- H2 gets margin-top from CSS rule above -->
+            <h2 class="text-3xl sm:text-4xl text-[#1F2933] font-serif-heading text-center">Why PhotoLineArt feels different the first time you use it</h2>
+            <h3 class="text-xl mt-4 mb-12 text-[#6B7280] font-medium text-center">Not an app to tap through. A tool you sit down with.</h3>
+
+            <!-- Feature/Benefit Grid -->
+            <div class="grid lg:grid-cols-2 gap-x-12 gap-y-16 mt-16">
+                <!-- 1. Line art looks like your photo -->
+                <div class="space-y-4">
+                    <h4 class="text-2xl font-semibold font-serif-heading text-[#1F2933]">1. Line art that actually looks like your photo</h4>
+                    <div class="art-mock">
+                        <div class="art-frame">Mock Preview: Close-up of Photo-Realistic Line Art</div>
+                    </div>
+                    <!-- Added mb-10 to increase space after this key paragraph -->
+                    <p class="text-lg text-[#1F2933] leading-relaxed mb-10">
+                        Our AI is tuned for faces, textures, and depth. Wrinkles in a hand. Fur on a dog. Light in a window. You recognize the moment immediately—<strong class="text-[#D9835F]">no harsh “cartoon filter” edges.</strong>
+                    </p>
+                </div>
+                
+                <!-- 2. Faber-Castell color maps -->
+                <div class="space-y-4">
+                    <h4 class="text-2xl font-semibold font-serif-heading text-[#1F2933]">2. Faber-Castell color maps for each image</h4>
+                    <div class="art-mock">
+                        <div class="art-frame bg-white text-left p-4">
+                            <ul class="text-sm space-y-1 text-[#6B7280]">
+                                <li class="font-bold text-[#1D5C63]">SKIN: FC 132 Light Flesh</li>
+                                <li>SHADOW: FC 180 Raw Umber</li>
+                                <li class="font-bold text-[#D9835F]">SKY: FC 143 Cobalt Blue</li>
+                                <li>HIGHLIGHT: FC 101 White</li>
+                            </ul>
+                        </div>
+                    </div>
+                    <!-- Added mb-10 to increase space after this key paragraph -->
+                    <p class="text-lg text-[#1F2933] leading-relaxed mb-10">
+                        Alongside every page, you get a guide that calls out specific Faber-Castell pencils. Choose your set size. We match colors for skin, sky, stone, and sky <strong class="text-[#D9835F]">so you’re never guessing at tones.</strong>
+                    </p>
+                </div>
+
+                <!-- 3. Layouts designed for mindful adults -->
+                <div class="space-y-4">
+                    <h4 class="text-2xl font-semibold font-serif-heading text-[#1F2933]">3. Layouts designed for mindful adults</h4>
+                    <div class="art-mock">
+                        <div class="art-frame">Mock Preview: Example of Thoughtful Whitespace & Line Weight</div>
+                    </div>
+                    <!-- Added mb-10 to increase space after this key paragraph -->
+                    <p class="text-lg text-[#1F2933] leading-relaxed mb-10">
+                        Pages are detailed but breathable. Thoughtful white space. Balanced line weight. Enough intricacy to keep your mind engaged without turning the page into visual noise.
+                    </p>
+                </div>
+
+                <!-- 4. Book-ready files you control -->
+                <div class="space-y-4">
+                    <h4 class="text-2xl font-semibold font-serif-heading text-[#1F2933]">4. Book-ready files you control</h4>
+                    <div class="art-mock">
+                        <div class="art-frame">Mock Preview: Download Button & PDF Icon</div>
+                    </div>
+                    <!-- Added mb-10 to increase space after this key paragraph -->
+                    <p class="text-lg text-[#1F2933] leading-relaxed mb-10">
+                        Your free trial page arrives as a high-resolution PDF. Standard letter/A4. Print at home on heavier paper or walk into any office supply store and ask them to bind it. No shipping. No waiting.
+                    </p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 6. FAQ Section -->
+    <section class="section-padding bg-white">
+        <div class="container-section max-w-4xl mx-auto">
+            <!-- H2 gets margin-top from CSS rule above -->
+            <h2 class="text-3xl sm:text-4xl text-[#1F2933] font-serif-heading text-center">Questions before you trust us with your favorite photos</h2>
+            <h3 class="text-xl mt-4 mb-12 text-[#6B7280] font-medium text-center">Fair. Here are straight answers.</h3>
+
+            <div class="mt-12 space-y-8 mb-10"> <!-- Added mb-10 here -->
+                <!-- FAQ Item 1 -->
+                <div class="bg-[#F7F3EC] p-6 rounded-xl border border-[#E5E7EB]">
+                    <h4 class="text-lg font-semibold text-[#1F2933] mb-2">Q1: Will the line art really look like my photo?</h4>
+                    <p class="text-base text-[#6B7280]">
+                        A: Yes. The model is trained to preserve faces and key details, not blur them. You’ll see a preview based on your actual photo before you download.
+                    </p>
+                </div>
+                <!-- FAQ Item 2 -->
+                <div class="bg-[#F7F3EC] p-6 rounded-xl border border-[#E5E7EB]">
+                    <h4 class="text-lg font-semibold text-[#1F2933] mb-2">Q2: Is this going to feel childish?</h4>
+                    <p class="text-base text-[#6B7280]">
+                        A: No. There are no cartoon characters or clip-art backgrounds. The pages are designed for adults who like detail, subtle shading, and slower work with real pencils.
+                    </p>
+                </div>
+                <!-- FAQ Item 3 -->
+                <div class="bg-[#F7F3EC] p-6 rounded-xl border border-[#E5E7EB]">
+                    <h4 class="text-lg font-semibold text-[#1F2933] mb-2">Q3: I’m not an artist. Is this too advanced?</h4>
+                    <p class="text-base text-[#6B7280]">
+                        A: If you can color inside a line, you’re fine. Each page includes practical tips and specific pencil suggestions. <strong class="text-[#1D5C63]">Follow our guidance exactly, or use it as a starting point.</strong>
+                    </p>
+                </div>
+                <!-- FAQ Item 4 -->
+                <div class="bg-[#F7F3EC] p-6 rounded-xl border border-[#E5E7EB]">
+                    <h4 class="text-lg font-semibold text-[#1F2933] mb-2">Q4: What happens to my photos?</h4>
+                    <p class="text-base text-[#6B7280]">
+                        A: Your images are encrypted in transit and used only to generate your art and tips. We don’t sell your data, and you can ask us to delete your photos and files at any time.
+                    </p>
+                </div>
+                <!-- FAQ Item 5 -->
+                <div class="bg-[#F7F3EC] p-6 rounded-xl border border-[#E5E7EB]">
+                    <h4 class="text-lg font-semibold text-[#1F2933] mb-2">Q5: How do I print and bind my pages?</h4>
+                    <p class="text-base text-[#6B7280]">
+                        A: Your file is ready for standard letter/A4. Print on heavier paper at home or email it to a local print/office shop and ask for simple spiral or comb binding. Most places can do it in a day.
+                    </p>
+                </div>
+                <!-- FAQ Item 6 -->
+                <div class="bg-[#F7F3EC] p-6 rounded-xl border border-[#E5E7EB]">
+                    <h4 class="text-lg font-semibold text-[#1F2933] mb-2">Q6: What exactly do I get in the free trial?</h4>
+                    <p class="text-base text-[#6B7280]">
+                        A: You get three pages built from one photo:
+                        <ul class="list-disc list-inside ml-4 mt-2 space-y-0.5">
+                            <li>The original photo</li>
+                            <li>The detailed line art</li>
+                            <li>A companion tips page with Faber-Castell suggestions</li>
+                        </ul>
+                        No credit card. <strong class="text-[#1D5C63]">They are yours to keep, even if you never upgrade.</strong>
+                    </p>
+                </div>
+            </div>
+            
+            <!-- Embedded CTA after FAQ -->
+            <div class="mt-16 text-center">
+                <a href="#hero-form" class="btn-primary rounded-full px-12 py-5 text-xl font-semibold inline-block">
+                    Create my free coloring page
+                </a>
+                <p class="text-sm text-[#6B7280] mt-3">Start with one photo that still makes you pause.</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- 7. Final Call-to-Action Section -->
+    <section class="section-padding" style="background-color: var(--color-final-cta-bg);">
+        <div class="container-section max-w-4xl mx-auto text-center">
+            <!-- H2 gets margin-top from CSS rule above -->
+            <h2 class="text-3xl sm:text-4xl text-[#1F2933] font-serif-heading">Your photos are piling up. Turn one into something you can hold.</h2>
+            <h3 class="text-xl mt-4 mb-12 text-[#6B7280] font-medium">Take one memory off the screen and onto your table tonight.</h3>
+            
+            <div class="grid sm:grid-cols-3 gap-6 mt-12 mb-10 text-left text-sm text-[#6B7280]">
+                <div class="border-l-2 border-[#D9835F] pl-4">
+                    <p class="font-semibold text-[#1F2933]">Personal</p>
+                    <p>Built from your own photos, not stock images.</p>
+                </div>
+                <div class="border-l-2 border-[#D9835F] pl-4">
+                    <p class="font-semibold text-[#1F2933]">Thoughtful</p>
+                    <p>Designed for colored pencils, quiet time, and real focus.</p>
+                </div>
+                <div class="border-l-2 border-[#D9835F] pl-4">
+                    <p class="font-semibold text-[#1F2933]">Fast</p>
+                    <p>One free page in minutes, ready to print and color.</p>
+                </div>
+            </div>
+
+            <a href="#hero-form" class="btn-primary rounded-full px-12 py-5 text-xl font-semibold inline-block">
+                Turn my photo into a free page
+            </a>
+            <p class="text-sm text-[#6B7280] mt-3">
+                If you’re done coloring generic designs, start with a single photo that still makes you feel something.
+            </p>
+        </div>
+    </section>
+
+    <!-- 8. Footer -->
+    <footer class="bg-white border-t border-[#E5E7EB] py-8">
+        <div class="container-section text-center">
+            <nav class="space-x-4 text-sm font-medium text-[#1D5C63]">
+                <a href="#" class="hover:text-[#17494E]">About</a>
+                <span class="text-[#E5E7EB]">|</span>
+                <a href="#how-it-works" class="hover:text-[#17494E]">How it works</a>
+                <span class="text-[#E5E7EB]">|</span>
+                <a href="#" class="hover:text-[#17494E]">Privacy</a>
+                <span class="text-[#E5E7EB]">|</span>
+                <a href="#" class="hover:text-[#17494E]">Terms</a>
+                <span class="text-[#E5E7EB]">|</span>
+                <a href="#" class="hover:text-[#17494E]">Contact</a>
+            </nav>
+            <p class="text-xs text-[#6B7280] mt-4">
+                PhotoLineArt uses AI to help create line art and color guides from your photos. We treat your images and personal data with care. See our Privacy Policy for the details.
+            </p>
+        </div>
+    </footer>
+    
+    <!-- JavaScript for Form Handling will go here -->
+    <script>
+        // Placeholder for our upcoming JavaScript logic
+        document.addEventListener('DOMContentLoaded', () => {
+            const form = document.getElementById('upload-form');
+            const submitButton = document.getElementById('submit-button');
+            const feedbackMessage = document.getElementById('feedback-message');
+
+            form.addEventListener('submit', function(event) {
+                event.preventDefault();
+                
+                // Show a temporary message as if processing is starting
+                submitButton.disabled = true;
+                submitButton.textContent = 'Processing... Please wait.';
+                
+                feedbackMessage.textContent = 'Processing your photo and generating your free coloring page...';
+                feedbackMessage.classList.remove('hidden', 'bg-red-100', 'text-red-700', 'bg-green-100', 'text-green-700');
+                feedbackMessage.classList.add('bg-yellow-100', 'text-yellow-700');
+
+                // In a real app, we would handle the file upload and API call here.
+                // For now, we simulate success after a delay.
+                setTimeout(() => {
+                    // Simulate success
+                    feedbackMessage.textContent = 'Success! Your file and color guide have been sent to your email!';
+                    feedbackMessage.classList.remove('bg-yellow-100', 'text-yellow-700');
+                    feedbackMessage.classList.add('bg-green-100', 'text-green-700');
+
+                    submitButton.disabled = false;
+                    submitButton.textContent = 'Turn my photo into a free page';
+                    form.reset();
+                    
+                }, 3000); // 3 second delay to simulate work
+            });
+        });
+    </script>
+</body>
+</html>

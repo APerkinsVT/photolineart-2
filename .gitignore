@@ -10,12 +10,7 @@ lerna-debug.log*
 node_modules
 dist
 dist-ssr
-
-downloads/*
-
 *.local
-.env
-*.zip
 
 # Editor directories and files
 .vscode/*
@@ -28,7 +23,7 @@ downloads/*
 *.sln
 *.sw?
 
+.env*
+*.zip
+/downloads
 .vercel
-.env*.local
-vercel.local.json
-

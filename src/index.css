@@ -1,0 +1,96 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  /* Core Colors */
+  --color-base: #F7F3EC;
+  --color-text-primary: #1F2933;
+  --color-text-secondary: #6B7280;
+
+  /* Brand / CTA Colors */
+  --color-cta-primary: #1D5C63;
+  --color-cta-hover: #17494E;
+  --color-cta-active: #12363A;
+  --color-cta-disabled: #9CA3AF;
+
+  /* Accents */
+  --color-accent-clay: #D9835F;
+  --color-soft-gold: #E6B35A;
+
+  /* Surfaces & Borders */
+  --color-surface-white: #FFFFFF;
+  --color-border: #E5E7EB;
+  --color-final-cta-bg: #EDF4F5;
+
+  /* Status */
+  --color-error: #B91C1C;
+  --color-warning: #F59E0B;
+}
+
+@layer base {
+  html {
+    scroll-behavior: smooth;
+  }
+
+  body {
+    background-color: var(--color-base);
+    color: var(--color-text-primary);
+    font-family: 'Inter', system-ui, 'Segoe UI', Roboto, sans-serif;
+    line-height: 1.7;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: 'Playfair Display', Georgia, 'Times New Roman', serif;
+    font-weight: 600;
+    line-height: 1.25;
+    color: var(--color-text-primary);
+  }
+
+  h2 {
+    margin-top: 4rem;
+    margin-bottom: 0.5rem;
+  }
+}
+
+@layer utilities {
+  .font-serif-heading {
+    font-family: 'Playfair Display', Georgia, 'Times New Roman', serif;
+  }
+
+  .font-sans-body {
+    font-family: 'Inter', system-ui, 'Segoe UI', Roboto, sans-serif;
+  }
+
+  .btn-primary {
+    background-color: var(--color-cta-primary);
+    color: #FFFFFF;
+    transition: background-color 0.2s, transform 0.1s;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.08);
+  }
+
+  .btn-primary:hover {
+    background-color: var(--color-cta-hover);
+    transform: translateY(-1px);
+  }
+
+  .container-section {
+    max-width: 72rem;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 2rem;
+    padding-right: 2rem;
+  }
+
+  .section-padding {
+    padding-top: 5rem;
+    padding-bottom: 5rem;
+  }
+}
