@@ -223,17 +223,42 @@ export function LandingPage() {
                     </div>
                   </div>
 
-                  <button
-                    className="btn-primary"
-                    type="button"
-                    onClick={() => {
-                      // placeholder download behavior; hook to real download if available
-                      window.open(result.lineArtUrl, '_blank');
-                    }}
-                  >
-                    <Download size={18} style={{ marginRight: '0.5rem' }} />
-                    Download Coloring Page
-                  </button>
+                  <div style={{ display: 'grid', gap: '0.5rem', marginTop: '0.5rem' }}>
+                    <label htmlFor="download-email" style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--color-text-primary)' }}>
+                      Email to receive your PDF + tips
+                    </label>
+                    <input
+                      id="download-email"
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="you@example.com"
+                      style={{
+                        width: '100%',
+                        borderRadius: '0.6rem',
+                        border: '1px solid var(--color-border)',
+                        padding: '0.7rem 0.9rem',
+                        fontSize: '0.95rem',
+                      }}
+                      required
+                    />
+                    <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>
+                      We’ll email the high-res PDF and tips. No spam, just your download link.
+                    </p>
+                    <button
+                      className="btn-primary"
+                      type="button"
+                      disabled={!email}
+                      onClick={() => {
+                        if (!email) return;
+                        window.open(result.lineArtUrl, '_blank');
+                      }}
+                      style={{ opacity: email ? 1 : 0.6, cursor: email ? 'pointer' : 'not-allowed' }}
+                    >
+                      <Download size={18} style={{ marginRight: '0.5rem' }} />
+                      Download Coloring Page
+                    </button>
+                  </div>
 
                   <div className="w-full max-w-2xl" style={{ margin: '0 auto' }}>
                     <h3
@@ -335,22 +360,6 @@ export function LandingPage() {
                 <h3 className="hero-form-title">Start with one photo you love</h3>
 
                 <form onSubmit={handleSubmit}>
-                  <div className="form-field">
-                    <label className="form-label" htmlFor="email">
-                      Email address
-                    </label>
-                    <input
-                      className="input-text"
-                      id="email"
-                      name="email"
-                      type="email"
-                      placeholder="you@example.com"
-                      required
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                    />
-                    <p className="form-hint">We’ll send your finished PDF and tips here.</p>
-                  </div>
 
                   <div className="form-field">
                     <label className="form-label" htmlFor="photo">
