@@ -1,0 +1,450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>PhotoLineArt – Turn Photos into Coloring Pages</title>
+
+  <!-- Google Fonts -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Playfair+Display:ital,wght@0;500;0,600;1,500;1,600&display=swap" rel="stylesheet">
+
+  <!-- Clean CSS (no Tailwind) -->
+  <link rel="stylesheet" href="photolineart.css">
+</head>
+
+<body>
+  <!-- Header -->
+  <header class="site-header">
+    <div class="container site-header-inner">
+      <div class="wordmark">
+        <span>Photo</span><span>LineArt</span>
+      </div>
+      <nav class="site-nav">
+        <a class="site-nav-link" href="#how-it-works">How it works</a>
+        <a class="site-nav-link" href="#examples">Examples</a>
+        <a class="site-nav-link site-nav-login" href="#login">Login</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Hero -->
+  <section class="section section--base">
+    <div class="container hero">
+      <div class="hero-inner">
+        <h1 class="hero-heading">
+          Turn one photo into a coloring page you’ll keep forever.
+        </h1>
+
+        <p class="hero-lead">
+          In minutes, our AI turns a favorite photo into high-fidelity line art,
+          <strong>complete with specific Faber-Castell color tips.</strong>
+          Not generic patterns. Your life, on paper. First page is free.
+        </p>
+
+        <ul class="hero-bullets">
+          <li><strong>Transform</strong> real moments—family, pets, travel—into pages you’ll actually want to color.</li>
+          <li>Get specific pencil guidance matched to your exact photo and Faber-Castell set.</li>
+          <li>Download a print-ready PDF and start coloring tonight.</li>
+        </ul>
+
+        <div class="hero-cta">
+          <a href="#hero-form" class="btn-primary">Turn my photo into a free page</a>
+        </div>
+
+        <p class="hero-meta">No card. One photo. About 2 minutes.</p>
+      </div>
+
+      <!-- Hero form card -->
+      <div id="hero-form" class="hero-form">
+        <h3 class="hero-form-title">Start with one photo you love</h3>
+
+        <form id="upload-form">
+          <div class="form-field">
+            <label class="form-label" for="email">Email address</label>
+            <input class="input-text" id="email" name="email" type="email" placeholder="you@example.com" required>
+            <p class="form-hint">We’ll send your finished PDF and tips here.</p>
+          </div>
+
+          <div class="form-field">
+            <label class="form-label" for="photo">Upload photo</label>
+            <input class="input-file" id="photo" name="photo" type="file" accept=".jpg,.jpeg,.png" required>
+            <p class="form-hint">JPG or PNG, up to 10 MB. Clear, well-lit photos work best.</p>
+          </div>
+
+          <div class="form-field">
+            <label class="checkbox-row">
+              <input type="checkbox">
+              <span>Send me advanced coloring ideas and new layout styles</span>
+            </label>
+          </div>
+
+          <div class="form-field">
+            <button id="submit-button" class="btn-primary" type="submit">
+              Turn my photo into a free page
+            </button>
+          </div>
+
+          <div id="feedback-message" class="feedback-message hidden"></div>
+        </form>
+
+        <p class="hero-form-footer">
+          Your photo stays private. You can delete it with one click.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Problem / agitation -->
+  <section class="section section--white">
+    <div class="container problem-section">
+      <h2 class="section-heading">Why most adult coloring books end up on a shelf</h2>
+      <h3 class="problem-subtitle">They calm your hands. Not your heart.</h3>
+
+      <p class="problem-intro">
+        You buy a beautiful “adult coloring book,” sit down to relax… and it’s page after page of random mandalas, forests, and quotes that mean nothing to you.
+        You color a few, feel oddly flat, and the book disappears into a drawer.
+      </p>
+
+      <div class="problem-grid">
+        <div class="problem-card">
+          <p class="problem-card-title">Generic calm</p>
+          <p class="problem-card-text">You’re coloring someone else’s idea of calm, not your own memories.</p>
+        </div>
+        <div class="problem-card">
+          <p class="problem-card-title">Lacks refinement</p>
+          <p class="problem-card-text">The art feels childish or noisy instead of thoughtful and refined.</p>
+        </div>
+        <div class="problem-card">
+          <p class="problem-card-title">Disposable ritual</p>
+          <p class="problem-card-text">After a week, the book is clutter, not a ritual.</p>
+        </div>
+      </div>
+
+      <p class="problem-outro">
+        Now picture this instead: your grandmother’s kitchen, your dog on that favorite trail, or the café from your last big trip—quietly waiting on the page, ready to be brought back to life, stroke by stroke.
+      </p>
+    </div>
+  </section>
+
+  <!-- Solution / how it works -->
+  <section id="how-it-works" class="section section--base">
+    <div class="container">
+      <div class="solution-heading">
+        <h2 class="section-heading">A coloring book made from your life</h2>
+        <h3 class="solution-subtitle">Turn “lost in your camera roll” photos into a ritual you actually look forward to.</h3>
+      </div>
+
+      <div class="solution-layout">
+        <div class="solution-panel">
+          <p class="solution-panel-label">Before</p>
+          <p>
+            Your best moments are buried in phone backups and old albums. They’re important, but <strong>they are rarely seen.</strong>
+          </p>
+          <hr>
+          <p class="solution-panel-label" style="color: var(--color-cta-primary); margin-top: 0.75rem;">After</p>
+          <p>
+            PhotoLineArt turns those same moments into gallery-quality line drawings with guided colors. You slow down. You remember. You create something <strong>tangible.</strong>
+          </p>
+          <p style="font-size: 0.875rem; font-style: italic; color: var(--color-text-secondary); margin-top: 1rem;">
+            <span style="font-weight:600;">Bridge:</span> Upload one photo. We handle the line art, the layout, and Faber-Castell recommendations tuned to your exact image and pencil set.
+          </p>
+        </div>
+
+        <div class="solution-steps">
+          <div class="solution-step">
+            <div class="solution-step-number">1</div>
+            <h4 class="solution-step-title">Upload a favorite photo</h4>
+            <p class="solution-step-text">Choose a clear shot of a person, pet, place, or memory you don’t want to lose to the scroll.</p>
+          </div>
+          <div class="solution-step">
+            <div class="solution-step-number">2</div>
+            <h4 class="solution-step-title">We create the art and color map</h4>
+            <p class="solution-step-text">Our AI converts your photo into detailed line art and a companion page with Faber-Castell suggestions matched to your chosen set.</p>
+          </div>
+          <div class="solution-step">
+            <div class="solution-step-number">3</div>
+            <h4 class="solution-step-title">Download, print, and start coloring</h4>
+            <p class="solution-step-text">Get a high-resolution PDF sized for standard letter/A4. Print at home and start coloring the same day.</p>
+          </div>
+        </div>
+      </div>
+
+      <div class="inline-cta">
+        <a href="#hero-form" class="btn-primary">Show me my photo as line art</a>
+        <p class="inline-cta-meta">Free trial: one full-resolution page + expert tips, no card.</p>
+      </div>
+
+      <div class="core-benefits">
+        <div>
+          <p class="core-benefit-title">Deeply personal</p>
+          <p class="core-benefit-text">Every page starts with a real memory—family, pets, trips, tiny everyday scenes.</p>
+        </div>
+        <div>
+          <p class="core-benefit-title">Built for colored pencils</p>
+          <p class="core-benefit-text">Line weight, detail, and white space tuned for longer, focused sessions.</p>
+        </div>
+        <div>
+          <p class="core-benefit-title">Guided, not guessed</p>
+          <p class="core-benefit-text">Specific Faber-Castell pencil numbers for skin, sky, stone, foliage, and more.</p>
+        </div>
+        <div>
+          <p class="core-benefit-title">Gift-ready in an afternoon</p>
+          <p class="core-benefit-text">Print, bind, and wrap a book that is uniquely yours.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Social proof -->
+  <section id="examples" class="section section--white">
+    <div class="container">
+      <div class="social-proof-heading">
+        <h2 class="section-heading">What people are coloring with PhotoLineArt</h2>
+        <h3 class="social-proof-subtitle">Real photos. Real pages. Real rituals.</h3>
+      </div>
+
+      <div class="testimonials">
+        <blockquote class="testimonial">
+          <p>“In one evening I turned a folder of old family photos into six pages my sister and I now color together on video calls. It feels like visiting our childhood.”</p>
+          <footer>— Elena K., 52, Seattle</footer>
+        </blockquote>
+        <blockquote class="testimonial">
+          <p>“I made a small book from our honeymoon pictures. We color one page every Sunday. It’s our reset button.”</p>
+          <footer>— Marcus L., 38, Chicago</footer>
+        </blockquote>
+        <blockquote class="testimonial">
+          <p>“I’m not an artist, but the Faber-Castell tips told me exactly which pencils to use. The pages look grown-up, not cutesy. It lives on my coffee table, not in a box.”</p>
+          <footer>— Priya S., 47, Boston</footer>
+        </blockquote>
+      </div>
+
+      <div class="stats">
+        <div class="stats-inner">
+          <p class="stat"><span>1000s</span> of pages created</p>
+          <p class="stat"><span>9/10</span> trial users color a page</p>
+        </div>
+      </div>
+
+      <div class="inline-cta">
+        <a href="#hero-form" class="btn-primary">Create my free coloring page</a>
+        <p class="inline-cta-meta">Start with one photo that still makes you pause.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Differentiation / features -->
+  <section class="section section--base">
+    <div class="container">
+      <div class="feature-heading">
+        <h2 class="section-heading">Why PhotoLineArt feels different the first time you use it</h2>
+        <h3 class="feature-subtitle">Not an app to tap through. A tool you sit down with.</h3>
+      </div>
+
+      <div class="features-grid">
+        <div class="feature-block">
+          <h4 class="feature-title">1. Line art that actually looks like your photo</h4>
+          <div class="art-mock">
+            <div class="art-frame">Mock preview: close-up of photo‑realistic line art</div>
+          </div>
+          <p class="feature-text">
+            Our AI is tuned for faces, textures, and depth. Wrinkles in a hand. Fur on a dog. Light in a window. You recognize the moment immediately—
+            <strong style="color: var(--color-accent-clay);">no harsh “cartoon filter” edges.</strong>
+          </p>
+        </div>
+
+        <div class="feature-block">
+          <h4 class="feature-title">2. Faber-Castell color maps for each image</h4>
+          <div class="art-mock">
+            <div class="art-frame" style="background-color:#ffffff; border-style:solid; border-width:1px;">
+              <ul style="list-style:none; padding-left:0; margin:0; text-align:left; font-size:0.875rem; color:var(--color-text-secondary);">
+                <li><strong style="color: var(--color-cta-primary);">SKIN: FC 132 Light Flesh</strong></li>
+                <li>SHADOW: FC 180 Raw Umber</li>
+                <li><strong style="color: var(--color-accent-clay);">SKY: FC 143 Cobalt Blue</strong></li>
+                <li>HIGHLIGHT: FC 101 White</li>
+              </ul>
+            </div>
+          </div>
+          <p class="feature-text">
+            Alongside every page, you get a guide that calls out specific Faber-Castell pencils. Choose your set size. We match colors for skin, sky, stone, and foliage
+            <strong style="color: var(--color-accent-clay);"> so you’re never guessing at tones.</strong>
+          </p>
+        </div>
+
+        <div class="feature-block">
+          <h4 class="feature-title">3. Layouts designed for mindful adults</h4>
+          <div class="art-mock">
+            <div class="art-frame">Mock preview: thoughtful whitespace &amp; line weight</div>
+          </div>
+          <p class="feature-text">
+            Pages are detailed but breathable. Thoughtful white space. Balanced line weight. Enough intricacy to keep your mind engaged without turning the page into visual noise.
+          </p>
+        </div>
+
+        <div class="feature-block">
+          <h4 class="feature-title">4. Book‑ready files you control</h4>
+          <div class="art-mock">
+            <div class="art-frame">Mock preview: download button &amp; PDF icon</div>
+          </div>
+          <p class="feature-text">
+            Your free trial page arrives as a high‑resolution PDF. Standard letter/A4. Print at home on heavier paper or walk into any office supply store and ask them to bind it.
+            No shipping. No waiting.
+          </p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- FAQ -->
+  <section class="section section--white">
+    <div class="container">
+      <div class="faq-heading">
+        <h2 class="section-heading">Questions before you trust us with your favorite photos</h2>
+        <h3 class="faq-subtitle">Fair. Here are straight answers.</h3>
+      </div>
+
+      <div class="faq-list">
+        <div class="faq-item">
+          <h4 class="faq-question">Q1: Will the line art really look like my photo?</h4>
+          <p class="faq-answer">
+            A: Yes. The model is trained to preserve faces and key details, not blur them. You’ll see a preview based on your actual photo before you download.
+          </p>
+        </div>
+
+        <div class="faq-item">
+          <h4 class="faq-question">Q2: Is this going to feel childish?</h4>
+          <p class="faq-answer">
+            A: No. There are no cartoon characters or clip‑art backgrounds. The pages are designed for adults who like detail, subtle shading, and slower work with real pencils.
+          </p>
+        </div>
+
+        <div class="faq-item">
+          <h4 class="faq-question">Q3: I’m not an artist. Is this too advanced?</h4>
+          <p class="faq-answer">
+            A: If you can color inside a line, you’re fine. Each page includes practical tips and specific pencil suggestions.
+            <strong style="color: var(--color-cta-primary);"> Follow our guidance exactly, or use it as a starting point.</strong>
+          </p>
+        </div>
+
+        <div class="faq-item">
+          <h4 class="faq-question">Q4: What happens to my photos?</h4>
+          <p class="faq-answer">
+            A: Your images are encrypted in transit and used only to generate your art and tips. We don’t sell your data, and you can ask us to delete your photos and files at any time.
+          </p>
+        </div>
+
+        <div class="faq-item">
+          <h4 class="faq-question">Q5: How do I print and bind my pages?</h4>
+          <p class="faq-answer">
+            A: Your file is ready for standard letter/A4. Print on heavier paper at home or email it to a local print/office shop and ask for simple spiral or comb binding. Most places can do it in a day.
+          </p>
+        </div>
+
+        <div class="faq-item">
+          <h4 class="faq-question">Q6: What exactly do I get in the free trial?</h4>
+          <p class="faq-answer">
+            A: You get three pages built from one photo:
+          </p>
+          <ul style="margin: 0.5rem 0 0 1.25rem; padding: 0; font-size:0.9rem; color:var(--color-text-secondary);">
+            <li>The original photo</li>
+            <li>The detailed line art</li>
+            <li>A companion tips page with Faber‑Castell suggestions</li>
+          </ul>
+          <p class="faq-answer" style="margin-top:0.5rem;">
+            No credit card. <strong style="color: var(--color-cta-primary);">They are yours to keep, even if you never upgrade.</strong>
+          </p>
+        </div>
+      </div>
+
+      <div class="inline-cta">
+        <a href="#hero-form" class="btn-primary">Create my free coloring page</a>
+        <p class="inline-cta-meta">Start with one photo that still makes you pause.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Final CTA -->
+  <section class="section section--final">
+    <div class="container">
+      <div class="final-heading">
+        <h2 class="section-heading">Your photos are piling up. Turn one into something you can hold.</h2>
+        <h3 class="final-subtitle">Take one memory off the screen and onto your table tonight.</h3>
+      </div>
+
+      <div class="final-grid">
+        <div class="final-grid-item">
+          <p class="final-grid-item-title">Personal</p>
+          <p>Built from your own photos, not stock images.</p>
+        </div>
+        <div class="final-grid-item">
+          <p class="final-grid-item-title">Thoughtful</p>
+          <p>Designed for colored pencils, quiet time, and real focus.</p>
+        </div>
+        <div class="final-grid-item">
+          <p class="final-grid-item-title">Fast</p>
+          <p>One free page in minutes, ready to print and color.</p>
+        </div>
+      </div>
+
+      <div class="inline-cta">
+        <a href="#hero-form" class="btn-primary">Turn my photo into a free page</a>
+        <p class="inline-cta-meta">
+          If you’re done coloring generic designs, start with a single photo that still makes you feel something.
+        </p>
+      </div>
+    </div>
+  </section>
+
+  <!-- Footer -->
+  <footer class="site-footer">
+    <div class="container">
+      <nav class="footer-nav">
+        <a href="#about">About</a>
+        <span>|</span>
+        <a href="#how-it-works">How it works</a>
+        <span>|</span>
+        <a href="#privacy">Privacy</a>
+        <span>|</span>
+        <a href="#terms">Terms</a>
+        <span>|</span>
+        <a href="#contact">Contact</a>
+      </nav>
+      <p class="footer-note">
+        PhotoLineArt uses AI to help create line art and color guides from your photos. We treat your images and personal data with care.
+        See our Privacy Policy for the details.
+      </p>
+    </div>
+  </footer>
+
+  <!-- Simple placeholder JS for the hero form feedback -->
+  <script>
+    document.addEventListener('DOMContentLoaded', function () {
+      var form = document.getElementById('upload-form');
+      var submitButton = document.getElementById('submit-button');
+      var feedback = document.getElementById('feedback-message');
+
+      if (!form) return;
+
+      form.addEventListener('submit', function (event) {
+        event.preventDefault();
+
+        submitButton.disabled = true;
+        submitButton.textContent = 'Processing... Please wait.';
+
+        feedback.textContent = 'Processing your photo and generating your free coloring page...';
+        feedback.classList.remove('hidden', 'bg-red-100', 'text-red-700', 'bg-green-100', 'text-green-700');
+        feedback.classList.add('bg-yellow-100', 'text-yellow-700');
+
+        setTimeout(function () {
+          feedback.textContent = 'Success! Your file and color guide have been sent to your email!';
+          feedback.classList.remove('bg-yellow-100', 'text-yellow-700');
+          feedback.classList.add('bg-green-100', 'text-green-700');
+
+          submitButton.disabled = false;
+          submitButton.textContent = 'Turn my photo into a free page';
+          form.reset();
+        }, 3000);
+      });
+    });
+  </script>
+</body>
+</html>

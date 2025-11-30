@@ -1,4 +1,5 @@
 import { Route, Routes } from 'react-router-dom';
+import { StaticLanding } from './components/StaticLanding';
 import { LayoutShell } from './components/LayoutShell';
 import { NotFoundPage } from './routes/NotFoundPage';
 import { PortalPage } from './routes/PortalPage';
@@ -10,6 +11,8 @@ function App() {
     <LayoutShell>
       <Routes>
         <Route path="/" element={<LandingPage />} />
+          {/* New: static design preview route */}
+        <Route path="/static-landing" element={<StaticLanding />} />
         <Route path="/studio" element={<StudioPage />} />
         <Route path="/p/:portalId" element={<PortalPage />} />
         <Route path="*" element={<NotFoundPage />} />
