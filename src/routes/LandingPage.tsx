@@ -26,6 +26,7 @@ type StatusState =
 export function LandingPage() {
   const [email, setEmail] = useState('');
   const [photo, setPhoto] = useState<File | null>(null);
+  const [newsletterOptIn, setNewsletterOptIn] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [feedback, setFeedback] = useState<FeedbackState>({ message: '', type: '' });
   const [result, setResult] = useState<LineArtResponse | null>(null);
@@ -39,7 +40,7 @@ export function LandingPage() {
     extracting: 'Extracting clean edges and contour lines...',
     rendering: 'Verifying fidelity and rendering clean line art...',
     palette: 'Generating color palette',
-    matching: 'Matching Faber-Castel colored pencils',
+    matching: 'Matching Faber-Castel pencil colors',
     tips: 'Adding expert coloring tips',
     finalizing: 'Polishing final palette and expert coloring tips...',
     ready: '',
@@ -55,8 +56,8 @@ export function LandingPage() {
 
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
-    if (!email || !photo) {
-      setFeedback({ message: 'Please provide both email and a photo.', type: 'error' });
+    if (!photo) {
+      setFeedback({ message: 'Please provide a photo.', type: 'error' });
       return;
     }
 
@@ -83,27 +84,27 @@ export function LandingPage() {
       timers.push(
         window.setTimeout(() => {
           setStatus((prev) => (prev === 'analyzing' ? 'extracting' : prev));
-        }, 8000),
-      );
-      timers.push(
-        window.setTimeout(() => {
-          setStatus((prev) => (prev === 'extracting' ? 'rendering' : prev));
         }, 12000),
       );
       timers.push(
         window.setTimeout(() => {
+          setStatus((prev) => (prev === 'extracting' ? 'rendering' : prev));
+        }, 20000),
+      );
+      timers.push(
+        window.setTimeout(() => {
           setStatus((prev) => (prev === 'rendering' ? 'palette' : prev));
-        }, 18000),
+        }, 30000),
       );
       timers.push(
         window.setTimeout(() => {
           setStatus((prev) => (prev === 'palette' ? 'matching' : prev));
-        }, 24000),
+        }, 36000),
       );
       timers.push(
         window.setTimeout(() => {
           setStatus((prev) => (prev === 'matching' ? 'tips' : prev));
-        }, 30000),
+        }, 42000),
       );
       statusTimers.current = timers;
       setFeedback({
@@ -174,7 +175,7 @@ export function LandingPage() {
       <section className="section section--base">
         <div className="container hero">
           <div className="hero-inner">
-            <h1 className="hero-heading">Turn one photo into a coloring page you’ll keep forever.</h1>
+            <h1 className="hero-heading">Turn your photo into a coloring page you’ll keep forever.</h1>
 
             <p className="hero-lead">
               In minutes, our AI turns a favorite photo into high-fidelity line art,{' '}
@@ -224,8 +225,17 @@ export function LandingPage() {
                   </div>
 
                   <div style={{ display: 'grid', gap: '0.5rem', marginTop: '0.5rem' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.95rem', color: 'var(--color-text-primary)', fontWeight: 500 }}>
+                      <input
+                        type="checkbox"
+                        checked={newsletterOptIn}
+                        onChange={(e) => setNewsletterOptIn(e.target.checked)}
+                        style={{ width: '16px', height: '16px' }}
+                      />
+                      <span>Send me advanced coloring ideas and new layout styles</span>
+                    </label>
                     <label htmlFor="download-email" style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--color-text-primary)' }}>
-                      Email to receive your PDF + tips
+                      Enter email to receive your PDF + expert coloring tips
                     </label>
                     <input
                       id="download-email"
@@ -278,14 +288,28 @@ export function LandingPage() {
                     </h3>
 
                     {/* pencil-textured swatches */}
-                    <div className="color-palette-row">
+                    <div
+                      className="color-palette-row"
+                      style={{
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(88px, 1fr))',
+                        gap: '0.9rem 1.2rem',
+                        justifyItems: 'center',
+                        width: '100%',
+                        maxWidth: '520px',
+                        margin: '0 auto',
+                        padding: '0 0.75rem',
+                      }}
+                    >
                       {result.analysis.palette.map((c) => (
-                        <div
-                          key={c.fcNo}
-                          title={`${c.fcName} (${c.fcNo})`}
-                          className="color-swatch"
-                          style={{ ['--swatch-color' as any]: c.hex }}
-                        />
+                        <div key={c.fcNo} className="swatch-with-label">
+                          <div
+                            title={`${c.fcName} (${c.fcNo})`}
+                            className="color-swatch"
+                            style={{ ['--swatch-color' as any]: c.hex }}
+                          />
+                          <div className="swatch-label">FC {c.fcNo}</div>
+                        </div>
                       ))}
                     </div>
                   </div>
@@ -377,13 +401,6 @@ export function LandingPage() {
                     <p className="form-hint">JPG or PNG, up to 10 MB. Clear, well-lit photos work best.</p>
                   </div>
 
-                  <div className="form-field">
-                    <label className="checkbox-row">
-                      <input type="checkbox" />
-                      <span>Send me advanced coloring ideas and new layout styles</span>
-                    </label>
-                  </div>
-
                   {status !== 'idle' && status !== 'ready' && status !== 'error' && (
                     <div
                       style={{
@@ -399,16 +416,7 @@ export function LandingPage() {
                     >
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '0.35rem', alignItems: 'center' }}>
                         <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-                          <div
-                            style={{
-                              width: '18px',
-                              height: '18px',
-                              border: '2px solid currentColor',
-                              borderTopColor: 'transparent',
-                              borderRadius: '50%',
-                              animation: 'spin 1s linear infinite',
-                            }}
-                          />
+                          {/* Spinner hidden */}
                           <span>{statusMessages[status]}</span>
                         </div>
                         <div style={{ display: 'flex', gap: '0.35rem' }}>
@@ -470,7 +478,7 @@ export function LandingPage() {
                   )}
 
                   <div className="form-field">
-                    <button className="btn-primary" type="submit" disabled={isLoading} style={{ marginTop: '0.75rem'}}>
+                    <button className="btn-primary" type="submit" disabled={isLoading} style={{ marginTop: '1.25rem' }}>
                       {isLoading ? 'Processing...' : 'Turn my photo into a free page'}
                     </button>
                   </div>
@@ -643,7 +651,7 @@ export function LandingPage() {
           <div className="stats">
             <div className="stats-inner">
               <p className="stat">
-                <span>1000s</span> of pages created
+                <span>1000's</span> of pages created
               </p>
               <p className="stat">
                 <span>9/10</span> trial users color a page
@@ -748,7 +756,7 @@ export function LandingPage() {
       {/* Final CTA */}
       <section className="section section--final">
         <div className="container final-heading">
-          <h2 className="section-heading">Your photos are piling up. Turn one into something you can hold.</h2>
+          <h2 className="section-heading">Your photos are piling up. Turn yours into something you can hold.</h2>
           <h3 className="final-subtitle">Take one memory off the screen and onto your table tonight.</h3>
 
           <div className="final-grid">
