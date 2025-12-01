@@ -1,8 +1,17 @@
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useMemo, useState, useRef } from 'react';
 import { Check, Download } from 'lucide-react';
 import { generateLineArt } from '../services/aiService';
+import { downloadPdfForItem, buildPdfDataUrlForItem } from '../services/pdfService';
 import { requestUploadTarget, uploadFileToBlob } from '../services/blobService';
 import type { LineArtResponse } from '../types/ai';
+import type { PhotoItem } from '../types/photo';
+
+type FCPaletteEntry = {
+  id: string | number;
+  name: string;
+  hex: string;
+  swatchFilename: string;
+};
 
 type FeedbackType = 'error' | 'success' | 'processing' | '';
 type FeedbackState = {
@@ -26,12 +35,23 @@ type StatusState =
 export function LandingPage() {
   const [email, setEmail] = useState('');
   const [photo, setPhoto] = useState<File | null>(null);
+  const [originalFileName, setOriginalFileName] = useState('');
+  const [fcPalette, setFcPalette] = useState<FCPaletteEntry[]>([]);
   const [newsletterOptIn, setNewsletterOptIn] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  const [isDownloading, setIsDownloading] = useState(false);
   const [feedback, setFeedback] = useState<FeedbackState>({ message: '', type: '' });
   const [result, setResult] = useState<LineArtResponse | null>(null);
   const [status, setStatus] = useState<StatusState>('idle');
   const statusTimers = useRef<number[]>([]);
+
+  const fcPaletteMap = useMemo(() => {
+    const map: Record<string, FCPaletteEntry> = {};
+    fcPalette.forEach((entry) => {
+      map[String(entry.id)] = entry;
+    });
+    return map;
+  }, [fcPalette]);
 
   const statusMessages: Record<StatusState, string> = {
     idle: '',
@@ -54,6 +74,40 @@ export function LandingPage() {
     };
   }, []);
 
+  useEffect(() => {
+    async function loadPalette() {
+      try {
+        const res = await fetch('/palettes/faber-castell-polychromos.json');
+        if (!res.ok) return;
+        const data: FCPaletteEntry[] = await res.json();
+        setFcPalette(data);
+      } catch (err) {
+        console.warn('Failed to load Faber-Castell palette', err);
+      }
+    }
+    loadPalette();
+  }, []);
+
+  const buildPhotoItemFromResult = (res: LineArtResponse): PhotoItem => {
+    const fileNameFromUrl =
+      originalFileName || photo?.name || res.analysis.sourceImageUrl?.split('/').pop() || 'photolineart';
+    const fallbackSize = photo?.size ?? 0;
+    return {
+      id: `inline-${Date.now()}`,
+      fileName: fileNameFromUrl,
+      originalSize: fallbackSize,
+      preparedSize: fallbackSize,
+      mimeType: photo?.type ?? 'image/jpeg',
+      previewUrl: res.analysis.sourceImageUrl,
+      referenceUrl: res.analysis.sourceImageUrl,
+      lineArtUrl: res.lineArtUrl,
+      analysis: res.analysis,
+      progress: 100,
+      state: 'ready',
+      lastUpdated: Date.now(),
+    };
+  };
+
   const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
     event.preventDefault();
     if (!photo) {
@@ -65,6 +119,7 @@ export function LandingPage() {
     statusTimers.current = [];
     setIsLoading(true);
     setResult(null);
+    setOriginalFileName(photo.name || '');
     setStatus('uploading');
     setFeedback({
       message: 'Uploading your photo...',
@@ -258,61 +313,105 @@ export function LandingPage() {
                     <button
                       className="btn-primary"
                       type="button"
-                      disabled={!email}
-                      onClick={() => {
-                        if (!email) return;
-                        window.open(result.lineArtUrl, '_blank');
+                      disabled={!email || isDownloading}
+                      onClick={async () => {
+                        if (!email || !result) return;
+                        try {
+                          setIsDownloading(true);
+                          const item = buildPhotoItemFromResult(result);
+                          // Generate PDF and trigger download
+                          await downloadPdfForItem(item, window.location.origin);
+                          // Also send via email (best-effort)
+                          try {
+                            const { dataUrl, fileName } = await buildPdfDataUrlForItem(
+                              item,
+                              window.location.origin,
+                            );
+                            await fetch('/api/send-pdf', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({
+                                to: email,
+                                pdfBase64: dataUrl,
+                                filename: fileName,
+                                subject: 'Your PhotoLineArt coloring page',
+                              }),
+                            });
+                          } catch (mailErr) {
+                            console.warn('Email send failed (continuing):', mailErr);
+                          }
+                        } catch (err) {
+                          console.error('Download failed', err);
+                          setFeedback({
+                            message: 'Unable to generate PDF right now. Please try again.',
+                            type: 'error',
+                          });
+                        } finally {
+                          setIsDownloading(false);
+                        }
                       }}
-                      style={{ opacity: email ? 1 : 0.6, cursor: email ? 'pointer' : 'not-allowed' }}
+                      style={{
+                        opacity: email && !isDownloading ? 1 : 0.6,
+                        cursor: email && !isDownloading ? 'pointer' : 'not-allowed',
+                      }}
                     >
                       <Download size={18} style={{ marginRight: '0.5rem' }} />
-                      Download Coloring Page
+                      {isDownloading ? 'Preparing PDF...' : 'Download Coloring Page'}
                     </button>
                   </div>
 
-                  <div className="w-full max-w-2xl" style={{ margin: '0 auto' }}>
-                    <h3
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '0.35rem',
-                        fontSize: '0.875rem',
-                        fontWeight: 600,
-                        textTransform: 'uppercase',
-                        letterSpacing: '0.08em',
-                        color: 'var(--color-text-secondary)',
-                        marginBottom: '0.5rem',
-                      }}
-                    >
-                      Color Palette
-                    </h3>
+                  {(() => {
+                    const resolvedPalette: FCPaletteEntry[] = (result?.analysis.palette ?? [])
+                      .map((c) => {
+                        const match = fcPaletteMap[String(c.fcNo)] || fcPaletteMap[String(c.fcName)];
+                        return match || null;
+                      })
+                      .filter(Boolean) as FCPaletteEntry[];
+                    return (
+                      <div className="w-full max-w-2xl" style={{ margin: '0 auto' }}>
+                        <h3
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.35rem',
+                            fontSize: '0.875rem',
+                            fontWeight: 600,
+                            textTransform: 'uppercase',
+                            letterSpacing: '0.08em',
+                            color: 'var(--color-text-secondary)',
+                            marginBottom: '0.5rem',
+                          }}
+                        >
+                          Color Palette
+                        </h3>
 
-                    {/* pencil-textured swatches */}
-                    <div
-                      className="color-palette-row"
-                      style={{
-                        display: 'grid',
-                        gridTemplateColumns: 'repeat(auto-fit, minmax(88px, 1fr))',
-                        gap: '0.9rem 1.2rem',
-                        justifyItems: 'center',
-                        width: '100%',
-                        maxWidth: '520px',
-                        margin: '0 auto',
-                        padding: '0 0.75rem',
-                      }}
-                    >
-                      {result.analysis.palette.map((c) => (
-                        <div key={c.fcNo} className="swatch-with-label">
-                          <div
-                            title={`${c.fcName} (${c.fcNo})`}
-                            className="color-swatch"
-                            style={{ ['--swatch-color' as any]: c.hex }}
-                          />
-                          <div className="swatch-label">FC {c.fcNo}</div>
+                        <div
+                          className="color-palette-row"
+                          style={{
+                            display: 'grid',
+                            gridTemplateColumns: 'repeat(auto-fit, minmax(88px, 1fr))',
+                            gap: '0.9rem 1.2rem',
+                            justifyItems: 'center',
+                            width: '100%',
+                            maxWidth: '520px',
+                            margin: '0 auto',
+                            padding: '0 0.75rem',
+                          }}
+                        >
+                          {resolvedPalette.map((p) => (
+                            <div key={p.id} className="swatch-with-label">
+                              <img
+                                src={`/swatches/${p.swatchFilename}`}
+                                alt={`FC ${p.id} ${p.name}`}
+                                style={{ width: '48px', height: '32px', objectFit: 'contain' }}
+                              />
+                              <div className="swatch-label">FC {p.id}</div>
+                            </div>
+                          ))}
                         </div>
-                      ))}
-                    </div>
-                  </div>
+                      </div>
+                    );
+                  })()}
 
 
                   <div className="w-full max-w-2xl" style={{ margin: '0 auto' }}>

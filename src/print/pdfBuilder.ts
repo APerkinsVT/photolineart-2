@@ -9,6 +9,22 @@ type AnalysisTipArray = NonNullable<PhotoItem['analysis']>['tips'];
 type AnalysisTip = AnalysisTipArray[number];
 type AnalysisPalette = NonNullable<PhotoItem['analysis']>['palette'];
 
+type FCPaletteEntry = {
+  id: string | number;
+  name: string;
+  hex: string;
+  swatchFilename: string;
+};
+let fcPaletteCache: Record<string, FCPaletteEntry> | null = null;
+let fontCache: Record<string, string> = {};
+let fontsLoaded = false;
+const fontsToLoad: Array<{ url: string; name: string; weight: 'normal' | 'bold' }> = [
+  { url: '/fonts/Playfair_Display/static/PlayfairDisplay-Regular.ttf', name: 'Playfair', weight: 'normal' },
+  { url: '/fonts/Playfair_Display/static/PlayfairDisplay-Bold.ttf', name: 'Playfair', weight: 'bold' },
+  { url: '/fonts/Inter/static/Inter_18pt-Regular.ttf', name: 'Inter', weight: 'normal' },
+  { url: '/fonts/Inter/static/Inter_18pt-SemiBold.ttf', name: 'Inter', weight: 'bold' },
+];
+
 interface BuildPdfOptions {
   portalUrl?: string;
   qrPngUrl?: string;
@@ -18,6 +34,10 @@ type Orientation = keyof typeof PAGE;
 
 export async function buildPdfForItem(item: PhotoItem, options: BuildPdfOptions = {}) {
   const portalUrl = options.portalUrl ?? window.location.origin;
+
+  const fcPaletteMap = await loadFcPaletteMap();
+  const swatchEntries = resolveSwatchEntries(item.analysis?.palette ?? [], fcPaletteMap);
+  await ensureFontsLoaded();
 
   let lineArtData: LoadedImage | null = null;
   let referenceData: LoadedImage | null = null;
@@ -43,22 +63,76 @@ export async function buildPdfForItem(item: PhotoItem, options: BuildPdfOptions 
     unit: 'mm',
     format: 'letter',
   });
+  registerFonts(doc);
   setBodyFont(doc);
   doc.setTextColor(15, 23, 31);
 
   renderLineArtPage(doc, lineArtData, pageConfig, getPageMargins(pageConfig, 1));
   doc.addPage(undefined, orientation);
-  renderInfoPage(doc, pageConfig, {
+  await renderInfoPage(doc, pageConfig, {
     referenceData,
-    fileName: item.fileName,
+    fileName: formatTitle(item.fileName),
     tips: (item.analysis?.tips ?? []) as AnalysisTipArray,
     palette: (item.analysis?.palette ?? []) as AnalysisPalette | [],
+    swatchEntries,
     portalUrl,
     qrPngUrl: options.qrPngUrl,
   });
 
   const fileName = `${slugifyFileName(item.fileName, 'photolineart')}.pdf`;
   doc.save(fileName);
+}
+
+export async function buildPdfForItemDataUrl(item: PhotoItem, options: BuildPdfOptions = {}) {
+  const portalUrl = options.portalUrl ?? window.location.origin;
+
+  const fcPaletteMap = await loadFcPaletteMap();
+  const swatchEntries = resolveSwatchEntries(item.analysis?.palette ?? [], fcPaletteMap);
+  await ensureFontsLoaded();
+
+  let lineArtData: LoadedImage | null = null;
+  let referenceData: LoadedImage | null = null;
+  try {
+    if (item.lineArtUrl) {
+      lineArtData = await fetchImageAsDataUrl(item.lineArtUrl);
+    }
+    if (item.referenceUrl) {
+      referenceData = await fetchImageAsDataUrl(item.referenceUrl);
+    } else if (item.previewUrl) {
+      referenceData = await fetchImageAsDataUrl(item.previewUrl);
+    } else if (item.blobUrl) {
+      referenceData = await fetchImageAsDataUrl(item.blobUrl);
+    }
+  } catch (error) {
+    console.warn('Failed to load image for PDF', error);
+  }
+
+  const orientation: Orientation = chooseOrientation(lineArtData ?? referenceData);
+  const pageConfig = PAGE[orientation];
+  const doc = new jsPDF({
+    orientation,
+    unit: 'mm',
+    format: 'letter',
+  });
+  registerFonts(doc);
+  setBodyFont(doc);
+  doc.setTextColor(15, 23, 31);
+
+  renderLineArtPage(doc, lineArtData, pageConfig, getPageMargins(pageConfig, 1));
+  doc.addPage(undefined, orientation);
+  await renderInfoPage(doc, pageConfig, {
+    referenceData,
+    fileName: formatTitle(item.fileName),
+    tips: (item.analysis?.tips ?? []) as AnalysisTipArray,
+    palette: (item.analysis?.palette ?? []) as AnalysisPalette | [],
+    swatchEntries,
+    portalUrl,
+    qrPngUrl: options.qrPngUrl,
+  });
+
+  const fileName = `${slugifyFileName(item.fileName, 'photolineart')}.pdf`;
+  const dataUrl = doc.output('datauristring');
+  return { dataUrl, fileName };
 }
 
 function chooseOrientation(image: LoadedImage | null): Orientation {
@@ -97,7 +171,7 @@ function renderLineArtPage(
   }
 }
 
-function renderInfoPage(
+async function renderInfoPage(
   doc: jsPDF,
   pageConfig: (typeof PAGE)[Orientation],
   params: {
@@ -105,6 +179,7 @@ function renderInfoPage(
     fileName: string;
     tips: AnalysisTipArray;
     palette: AnalysisPalette | [];
+    swatchEntries: FCPaletteEntry[];
     portalUrl: string;
     qrPngUrl?: string;
   },
@@ -121,7 +196,8 @@ function renderInfoPage(
   cursorY += 5;
 
   if (params.referenceData) {
-    const maxWidth = Math.min(pageWidth, 95);
+    const isLandscape = pageConfig.width > pageConfig.height;
+    const maxWidth = Math.min(pageWidth, 95) * (isLandscape ? 0.6 : 0.8); // shrink more on landscape
     const { width, height } = fitInsideBox(
       params.referenceData.width,
       params.referenceData.height,
@@ -147,7 +223,51 @@ function renderInfoPage(
   })) as AnalysisTipArray;
   const tipEntries: AnalysisTipArray = params.tips.length > 0 ? params.tips : fallbackTips;
 
+  // Palette row using swatch images (up to 12)
+  if ((params.swatchEntries ?? []).length > 0) {
+    const swatches = params.swatchEntries.slice(0, 12);
+    const swatchHeight = 10;
+    const swatchWidth = 14;
+    const gap = 6;
+    const totalWidth = swatches.length * (swatchWidth + gap) - gap;
+    let cursorX = pageConfig.width / 2 - totalWidth / 2;
+
+    const swatchImages: Array<{ entry: FCPaletteEntry; img: LoadedImage | null }> = await Promise.all(
+      swatches.map(async (entry) => {
+        try {
+          const img = await fetchImageAsDataUrl(`/swatches/${entry.swatchFilename}`);
+          return { entry, img };
+        } catch {
+          return { entry, img: null };
+        }
+      }),
+    );
+
+    doc.setFontSize(FONTS.small);
+    swatchImages.forEach(({ entry, img }, idx) => {
+      if (idx > 0) cursorX += swatchWidth + gap;
+      if (img) {
+        const { width, height } = fitInsideBox(img.width, img.height, swatchWidth, swatchHeight);
+        const offsetX = cursorX + (swatchWidth - width) / 2;
+        doc.addImage(img.dataUrl, 'PNG', offsetX, cursorY, width, height);
+      } else {
+        doc.setDrawColor(220, 224, 230);
+        doc.rect(cursorX, cursorY, swatchWidth, swatchHeight);
+      }
+      doc.text(`FC ${entry.id}`, cursorX + swatchWidth / 2, cursorY + swatchHeight + 4.5, { align: 'center' });
+    });
+    cursorY += swatchHeight + 10;
+    doc.setDrawColor('#e2e8f0');
+    doc.line(marginConfig.left, cursorY, pageConfig.width - marginConfig.right, cursorY);
+    cursorY += 6;
+  }
+
+  const maxY = pageConfig.height - marginConfig.bottom - 12;
   tipEntries.slice(0, 8).forEach((tip, index) => {
+    // Skip tips that would overflow the bottom margin
+    if (cursorY + 30 > maxY) {
+      return;
+    }
     cursorY = renderTipBlock(doc, pageConfig, tip as AnalysisTip, params.palette, cursorY, marginConfig);
     if (index < tipEntries.length - 1) {
       doc.setDrawColor('#e2e8f0');
@@ -215,11 +335,14 @@ function renderGenericTipsPage(doc: jsPDF) {
 async function renderReferenceSpread(doc: jsPDF, item: PortalManifest['items'][number], portalUrl: string) {
   const pageConfig = PAGE.portrait;
   const referenceData = await fetchImageAsDataUrl(item.originalUrl);
-  renderInfoPage(doc, pageConfig, {
+  const fcPaletteMap = await loadFcPaletteMap();
+  const swatchEntries = resolveSwatchEntries(item.palette ?? [], fcPaletteMap);
+  await renderInfoPage(doc, pageConfig, {
     referenceData,
     fileName: item.title ?? formatTitleFromUrl(item.originalUrl, 'Line Art'),
     tips: item.tips,
     palette: item.palette,
+    swatchEntries,
     portalUrl,
   });
 }
@@ -306,9 +429,11 @@ function renderTipColors(
       cursorX = startX;
       cursorY += chipSize + chipSpacing + 4;
     }
+    const chipY = cursorY - chipSize / 2;
     doc.setFillColor(color.hex);
-    doc.rect(cursorX, cursorY - chipSize + 4, chipSize, chipSize, 'FD');
-    doc.text(`${color.fcNo} ${color.fcName}`, cursorX + 6, cursorY + 1);
+    doc.rect(cursorX, chipY, chipSize, chipSize, 'FD');
+    const textY = chipY + chipSize / 2 + 1.5;
+    doc.text(`${color.fcNo} ${color.fcName}`, cursorX + 6, textY);
     cursorX += 48;
   });
   return cursorY + chipSize + chipSpacing + 2;
@@ -343,12 +468,87 @@ function fitInsideBox(
   };
 }
 
+async function ensureFontsLoaded() {
+  if (fontsLoaded) return;
+  for (const font of fontsToLoad) {
+    const b64 = await fetchFontBase64(font.url);
+    if (b64) {
+      fontCache[font.url] = b64;
+    }
+  }
+  fontsLoaded = true;
+}
+
+async function fetchFontBase64(url: string): Promise<string | null> {
+  const cached = fontCache[url];
+  if (cached) return cached;
+  try {
+    const res = await fetch(url);
+    if (!res.ok) return null;
+    const blob = await res.blob();
+    const dataUrl: string = await new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = reject;
+      reader.readAsDataURL(blob);
+    });
+    const base64 = dataUrl.split(',')[1] ?? '';
+    fontCache[url] = base64;
+    return base64;
+  } catch (e) {
+    console.warn('Failed to load font', url, e);
+    return null;
+  }
+}
+
+function registerFonts(doc: jsPDF) {
+  fontsToLoad.forEach((font) => {
+    const b64 = fontCache[font.url];
+    if (!b64) return;
+    const fileName = font.url.split('/').pop() ?? `${font.name}.ttf`;
+    doc.addFileToVFS(fileName, b64);
+    doc.addFont(fileName, font.name, font.weight === 'bold' ? 'bold' : 'normal');
+  });
+}
+
+async function loadFcPaletteMap(): Promise<Record<string, FCPaletteEntry>> {
+  if (fcPaletteCache) return fcPaletteCache;
+  const res = await fetch('/palettes/faber-castell-polychromos.json');
+  if (!res.ok) {
+    fcPaletteCache = {};
+    return fcPaletteCache;
+  }
+  const data: FCPaletteEntry[] = await res.json();
+  const map: Record<string, FCPaletteEntry> = {};
+  data.forEach((entry) => {
+    map[String(entry.id)] = entry;
+  });
+  fcPaletteCache = map;
+  return map;
+}
+
+function resolveSwatchEntries(palette: AnalysisPalette | [], map: Record<string, FCPaletteEntry>) {
+  return palette
+    .map((c) => map[String(c.fcNo)] || map[String(c.fcName)] || null)
+    .filter(Boolean) as FCPaletteEntry[];
+}
+
+function formatTitle(fileName: string) {
+  const base = fileName.replace(/\.[^/.]+$/, '');
+  return base
+    .split(/[-_ ]+/)
+    .map((chunk) => chunk.charAt(0).toUpperCase() + chunk.slice(1))
+    .join(' ');
+}
+
 export async function buildBundleBook(manifest: PortalManifest) {
+  await ensureFontsLoaded();
   const doc = new jsPDF({
     orientation: 'portrait',
     unit: 'mm',
     format: 'letter',
   });
+  registerFonts(doc);
   setBodyFont(doc);
   doc.setTextColor(15, 23, 31);
   renderCoverPage(doc);
@@ -390,11 +590,11 @@ function formatTitleFromUrl(url: string, fallback: string) {
 }
 
 function setHeadingFont(doc: jsPDF, weight: 'normal' | 'bold' = 'bold') {
-  doc.setFont('Times', weight === 'bold' ? 'bold' : 'normal');
+  doc.setFont('Playfair', weight === 'bold' ? 'bold' : 'normal');
 }
 
 function setBodyFont(doc: jsPDF, weight: 'normal' | 'bold' = 'normal') {
-  doc.setFont('Helvetica', weight === 'bold' ? 'bold' : 'normal');
+  doc.setFont('Inter', weight === 'bold' ? 'bold' : 'normal');
 }
 
 function getPageMargins(pageConfig: (typeof PAGE)[Orientation], pageNumber: number) {
