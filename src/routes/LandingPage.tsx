@@ -340,6 +340,21 @@ export function LandingPage() {
                           } catch (mailErr) {
                             console.warn('Email send failed (continuing):', mailErr);
                           }
+                          // Delete free-tier assets after download/email (best-effort)
+                          try {
+                            const urlsToDelete: string[] = [];
+                            if (result.analysis.sourceImageUrl) urlsToDelete.push(result.analysis.sourceImageUrl);
+                            if (result.lineArtUrl) urlsToDelete.push(result.lineArtUrl);
+                            if (urlsToDelete.length > 0) {
+                              await fetch('/api/delete-asset', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ urls: urlsToDelete }),
+                              });
+                            }
+                          } catch (delErr) {
+                            console.warn('Asset delete failed (continuing):', delErr);
+                          }
                         } catch (err) {
                           console.error('Download failed', err);
                           setFeedback({
@@ -584,7 +599,7 @@ export function LandingPage() {
                 </form>
 
                 <p className="hero-form-footer">
-                  Your photo stays private. You can delete it with one click.
+                  Your photos stay private. They are deleted right after your page downloads.
                 </p>
               </div>
             )}

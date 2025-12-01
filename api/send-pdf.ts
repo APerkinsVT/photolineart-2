@@ -57,7 +57,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       subject: parsed.subject,
       text:
         parsed.text ??
-        'Your coloring page is ready. The PDF is attached. Thanks for trying PhotoLineArt!',
+        [
+          'Your coloring page is ready. The PDF is attached.',
+          '',
+          'Privacy first: we delete your uploaded photo and generated line art right after sending this download.',
+          'If you ever want to make another page, just upload again—your images aren’t kept on our servers.',
+          '',
+          'Thanks for trying PhotoLineArt!',
+        ].join('\n'),
       attachments: [
         {
           filename: parsed.filename,
