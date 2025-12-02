@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState, useRef } from 'react';
-import { Check, Download } from 'lucide-react';
+import { Download } from 'lucide-react';
 import { generateLineArt } from '../services/aiService';
 import { downloadPdfForItem, buildPdfDataUrlForItem } from '../services/pdfService';
 import { requestUploadTarget, uploadFileToBlob } from '../services/blobService';
