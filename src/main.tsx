@@ -5,6 +5,8 @@ import { BrowserRouter } from 'react-router-dom';
 import './styles/photolineart.css';
 import App from './App.tsx';
 
+console.log('Built bundle loaded');
+
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
     <BrowserRouter>
