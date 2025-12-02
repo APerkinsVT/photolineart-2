@@ -59,6 +59,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
         parsed.text ??
         [
           'Your coloring page is ready. The PDF is attached.',
+          'Upload a photo again anytime at https://photolineart.com/',
           '',
           'Privacy first: we delete your uploaded photo and generated line art right after sending this download.',
           'If you ever want to make another page, just upload again—your images aren’t kept on our servers.',
