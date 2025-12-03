@@ -181,25 +181,25 @@ async function createPrediction(params: {
     contentType: 'image/png',
     token: params.blobToken,
   });
-  const response = await fetch(REPLICATE_API_BASE, {
-    method: 'POST',
-    headers: {
-      Authorization: `Bearer ${params.token}`,
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({
-      version: params.version,
-      input: {
-        image_input: [uploadResult.url],
-        prompt: params.prompt,
-      },
-    }),
-  });
-
-  if (!response.ok) {
-    const message = await response.text();
-    throw new Error(`Replicate request failed: ${message}`);
-  }
+  const response = await fetchWithRetry(
+    () =>
+      fetch(REPLICATE_API_BASE, {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${params.token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          version: params.version,
+          input: {
+            image_input: [uploadResult.url],
+            prompt: params.prompt,
+          },
+        }),
+      }),
+    2,
+    1000,
+  );
 
   const prediction = (await response.json()) as ReplicatePrediction;
   return prediction;
@@ -208,15 +208,16 @@ async function createPrediction(params: {
 async function waitForPrediction(id: string, token: string) {
   const startedAt = Date.now();
   while (Date.now() - startedAt < REPLICATE_TIMEOUT_MS) {
-    const status = await fetch(`${REPLICATE_API_BASE}/${id}`, {
-      headers: {
-        Authorization: `Bearer ${token}`,
-      },
-    });
-    if (!status.ok) {
-      const message = await status.text();
-      throw new Error(`Failed to poll Replicate: ${message}`);
-    }
+    const status = await fetchWithRetry(
+      () =>
+        fetch(`${REPLICATE_API_BASE}/${id}`, {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }),
+      2,
+      800,
+    );
     const payload = (await status.json()) as ReplicatePrediction;
     if (payload.status === 'succeeded') {
       const url = extractOutputUrl(payload.output);
@@ -421,4 +422,35 @@ function ensurePaletteCoverage(
     push(entry);
   });
   return merged.slice(0, Math.min(MAX_PALETTE_SIZE, merged.length));
+}
+
+async function fetchWithRetry(
+  fn: () => Promise<Response>,
+  retries = 1,
+  delayMs = 500,
+): Promise<Response> {
+  let lastError: any;
+  for (let attempt = 0; attempt <= retries; attempt++) {
+    try {
+      const res = await fn();
+      if (!res.ok) {
+        // retry only on 5xx
+        if (res.status >= 500 && attempt < retries) {
+          await new Promise((r) => setTimeout(r, delayMs));
+          continue;
+        }
+        const message = await res.text();
+        throw new Error(message || `Request failed with status ${res.status}`);
+      }
+      return res;
+    } catch (err) {
+      lastError = err;
+      if (attempt < retries) {
+        await new Promise((r) => setTimeout(r, delayMs));
+        continue;
+      }
+      break;
+    }
+  }
+  throw lastError instanceof Error ? lastError : new Error('Request failed');
 }

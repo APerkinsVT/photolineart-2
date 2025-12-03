@@ -279,100 +279,90 @@ export function LandingPage() {
                     </div>
                   </div>
 
-                  <div style={{ display: 'grid', gap: '0.5rem', marginTop: '0.5rem' }}>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.95rem', color: 'var(--color-text-primary)', fontWeight: 500 }}>
-                      <input
-                        type="checkbox"
-                        checked={newsletterOptIn}
-                        onChange={(e) => setNewsletterOptIn(e.target.checked)}
-                        style={{ width: '16px', height: '16px' }}
-                      />
-                      <span>Send me advanced coloring ideas and new layout styles</span>
-                    </label>
-                    <label htmlFor="download-email" style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--color-text-primary)' }}>
-                      Enter email to receive your PDF + expert coloring tips
-                    </label>
-                    <input
-                      id="download-email"
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="you@example.com"
+                  <div style={{ textAlign: 'center', marginTop: '0.65rem', color: 'var(--color-text-secondary)', fontWeight: 700 }}>
+                    Share on…
+                  </div>
+                  <div
+                    style={{
+                      display: 'flex',
+                      gap: '0.5rem',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      flexWrap: 'wrap',
+                      marginTop: '0.35rem',
+                      marginBottom: '0.5rem',
+                    }}
+                  >
+                    <a
+                      href="https://www.twitter.com/intent/tweet?text=I%20just%20turned%20a%20photo%20into%20line%20art%20with%20PhotoLineArt&url=https%3A%2F%2Fphotolineart.com"
+                      target="_blank"
+                      rel="noreferrer"
                       style={{
-                        width: '100%',
-                        borderRadius: '0.6rem',
-                        border: '1px solid var(--color-border)',
-                        padding: '0.7rem 0.9rem',
-                        fontSize: '0.95rem',
-                      }}
-                      required
-                    />
-                    <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>
-                      We’ll email the high-res PDF and tips. No spam, just your download link.
-                    </p>
-                    <button
-                      className="btn-primary"
-                      type="button"
-                      disabled={!email || isDownloading}
-                      onClick={async () => {
-                        if (!email || !result) return;
-                        try {
-                          setIsDownloading(true);
-                          const item = buildPhotoItemFromResult(result);
-                          // Generate PDF and trigger download
-                          await downloadPdfForItem(item, window.location.origin);
-                          // Also send via email (best-effort)
-                          try {
-                            const { dataUrl, fileName } = await buildPdfDataUrlForItem(
-                              item,
-                              window.location.origin,
-                            );
-                            await fetch('/api/send-pdf', {
-                              method: 'POST',
-                              headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({
-                                to: email,
-                                pdfBase64: dataUrl,
-                                filename: fileName,
-                                subject: 'Your PhotoLineArt coloring page',
-                              }),
-                            });
-                          } catch (mailErr) {
-                            console.warn('Email send failed (continuing):', mailErr);
-                          }
-                          // Delete free-tier assets after download/email (best-effort)
-                          try {
-                            const urlsToDelete: string[] = [];
-                            if (result.analysis.sourceImageUrl) urlsToDelete.push(result.analysis.sourceImageUrl);
-                            if (result.lineArtUrl) urlsToDelete.push(result.lineArtUrl);
-                            if (urlsToDelete.length > 0) {
-                              await fetch('/api/delete-asset', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ urls: urlsToDelete }),
-                              });
-                            }
-                          } catch (delErr) {
-                            console.warn('Asset delete failed (continuing):', delErr);
-                          }
-                        } catch (err) {
-                          console.error('Download failed', err);
-                          setFeedback({
-                            message: 'Unable to generate PDF right now. Please try again.',
-                            type: 'error',
-                          });
-                        } finally {
-                          setIsDownloading(false);
-                        }
-                      }}
-                      style={{
-                        opacity: email && !isDownloading ? 1 : 0.6,
-                        cursor: email && !isDownloading ? 'pointer' : 'not-allowed',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: '36px',
+                        height: '36px',
+                        borderRadius: '999px',
+                        border: '1px solid #d1d5db',
+                        background: '#f9fafb',
                       }}
                     >
-                      <Download size={18} style={{ marginRight: '0.5rem' }} />
-                      {isDownloading ? 'Preparing PDF...' : 'Download Coloring Page'}
-                    </button>
+                      <img src="/icons/X-logo-black.png" alt="X" style={{ width: 18, height: 18 }} />
+                    </a>
+                    <a
+                      href="https://www.facebook.com/sharer/sharer.php?u=https%3A%2F%2Fphotolineart.com"
+                      target="_blank"
+                      rel="noreferrer"
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: '36px',
+                        height: '36px',
+                        borderRadius: '999px',
+                        border: '1px solid #d1d5db',
+                        background: '#f9fafb',
+                      }}
+                    >
+                      <img src="/icons/Facebook_Logo_Primary.png" alt="Facebook" style={{ width: 18, height: 18 }} />
+                    </a>
+                    <a
+                      href="https://www.linkedin.com/sharing/share-offsite/?url=https%3A%2F%2Fphotolineart.com"
+                      target="_blank"
+                      rel="noreferrer"
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: '36px',
+                        height: '36px',
+                        borderRadius: '999px',
+                        border: '1px solid #d1d5db',
+                        background: '#f9fafb',
+                      }}
+                    >
+                      <img src="/icons/LI-Logo.png" alt="LinkedIn" style={{ width: 18, height: 18 }} />
+                    </a>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'center', marginTop: '0.5rem' }}>
+                    <a
+                      href="https://www.buymeacoffee.com/photolineart"
+                      target="_blank"
+                      rel="noreferrer"
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.4rem',
+                        textDecoration: 'none',
+                      }}
+                    >
+                      <img
+                        src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png"
+                        alt="Buy Me A Coffee"
+                        style={{ height: '36px', width: 'auto' }}
+                      />
+                    </a>
                   </div>
 
                   {(() => {
@@ -477,6 +467,182 @@ export function LandingPage() {
                     </div>
                   </div>
 
+                  <div style={{ display: 'grid', gap: '0.5rem', marginTop: '1.25rem' }}>
+                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.95rem', color: 'var(--color-text-primary)', fontWeight: 500 }}>
+                      <input
+                        type="checkbox"
+                        checked={newsletterOptIn}
+                        onChange={(e) => setNewsletterOptIn(e.target.checked)}
+                        style={{ width: '16px', height: '16px' }}
+                      />
+                      <span>Send me advanced coloring ideas and new layout styles</span>
+                    </label>
+                    <label htmlFor="download-email" style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--color-text-primary)' }}>
+                      Enter email to receive your PDF + expert coloring tips
+                    </label>
+                    <input
+                      id="download-email"
+                      type="email"
+                      value={email}
+                      onChange={(e) => setEmail(e.target.value)}
+                      placeholder="you@example.com"
+                      style={{
+                        width: '100%',
+                        borderRadius: '0.6rem',
+                        border: '1px solid var(--color-border)',
+                        padding: '0.7rem 0.9rem',
+                        fontSize: '0.95rem',
+                      }}
+                      required
+                    />
+                    <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>
+                      We’ll email the high-res PDF and tips. No spam, just your download link.
+                    </p>
+                    <button
+                      className="btn-primary"
+                      type="button"
+                      disabled={!email || isDownloading}
+                      onClick={async () => {
+                        if (!email || !result) return;
+                        try {
+                          setIsDownloading(true);
+                          const item = buildPhotoItemFromResult(result);
+                          await downloadPdfForItem(item, window.location.origin);
+                          try {
+                            const { dataUrl, fileName } = await buildPdfDataUrlForItem(item, window.location.origin);
+                            await fetch('/api/send-pdf', {
+                              method: 'POST',
+                              headers: { 'Content-Type': 'application/json' },
+                              body: JSON.stringify({
+                                to: email,
+                                pdfBase64: dataUrl,
+                                filename: fileName,
+                                subject: 'Your PhotoLineArt coloring page',
+                              }),
+                            });
+                          } catch (mailErr) {
+                            console.warn('Email send failed (continuing):', mailErr);
+                          }
+                          try {
+                            const urlsToDelete: string[] = [];
+                            if (result.analysis.sourceImageUrl) urlsToDelete.push(result.analysis.sourceImageUrl);
+                            if (result.lineArtUrl) urlsToDelete.push(result.lineArtUrl);
+                            if (urlsToDelete.length > 0) {
+                              await fetch('/api/delete-asset', {
+                                method: 'POST',
+                                headers: { 'Content-Type': 'application/json' },
+                                body: JSON.stringify({ urls: urlsToDelete }),
+                              });
+                            }
+                          } catch (delErr) {
+                            console.warn('Asset delete failed (continuing):', delErr);
+                          }
+                        } catch (err) {
+                          console.error('Download failed', err);
+                          setFeedback({
+                            message: 'Unable to generate PDF right now. Please try again.',
+                            type: 'error',
+                          });
+                        } finally {
+                          setIsDownloading(false);
+                        }
+                      }}
+                      style={{
+                        opacity: email && !isDownloading ? 1 : 0.6,
+                        cursor: email && !isDownloading ? 'pointer' : 'not-allowed',
+                      }}
+                    >
+                      <Download size={18} style={{ marginRight: '0.5rem' }} />
+                      {isDownloading ? 'Preparing PDF...' : 'Download Coloring Page'}
+                    </button>
+                  </div>
+
+                  <div style={{ textAlign: 'center', marginTop: '0.65rem', color: 'var(--color-text-secondary)', fontWeight: 700 }}>
+                    Share on…
+                  </div>
+                  <div
+                    style={{
+                      display: 'flex',
+                      gap: '0.5rem',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      flexWrap: 'wrap',
+                      marginTop: '0.35rem',
+                      marginBottom: '0.5rem',
+                    }}
+                  >
+                    <a
+                      href="https://www.twitter.com/intent/tweet?text=I%20just%20turned%20a%20photo%20into%20line%20art%20with%20PhotoLineArt&url=https%3A%2F%2Fphotolineart.com"
+                      target="_blank"
+                      rel="noreferrer"
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: '36px',
+                        height: '36px',
+                        borderRadius: '999px',
+                        border: '1px solid #d1d5db',
+                        background: '#f9fafb',
+                      }}
+                    >
+                      <img src="/icons/X-logo-black.png" alt="X" style={{ width: 18, height: 18 }} />
+                    </a>
+                    <a
+                      href="https://www.facebook.com/sharer/sharer.php?u=https%3A%2F%2Fphotolineart.com"
+                      target="_blank"
+                      rel="noreferrer"
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: '36px',
+                        height: '36px',
+                        borderRadius: '999px',
+                        border: '1px solid #d1d5db',
+                        background: '#f9fafb',
+                      }}
+                    >
+                      <img src="/icons/Facebook_Logo_Primary.png" alt="Facebook" style={{ width: 18, height: 18 }} />
+                    </a>
+                    <a
+                      href="https://www.linkedin.com/sharing/share-offsite/?url=https%3A%2F%2Fphotolineart.com"
+                      target="_blank"
+                      rel="noreferrer"
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        width: '36px',
+                        height: '36px',
+                        borderRadius: '999px',
+                        border: '1px solid #d1d5db',
+                        background: '#f9fafb',
+                      }}
+                    >
+                      <img src="/icons/LI-Logo.png" alt="LinkedIn" style={{ width: 18, height: 18 }} />
+                    </a>
+                  </div>
+                  <div style={{ display: 'flex', justifyContent: 'center', marginTop: '0.5rem' }}>
+                    <a
+                      href="https://www.buymeacoffee.com/photolineart"
+                      target="_blank"
+                      rel="noreferrer"
+                      style={{
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '0.4rem',
+                        textDecoration: 'none',
+                      }}
+                    >
+                      <img
+                        src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png"
+                        alt="Buy Me A Coffee"
+                        style={{ height: '36px', width: 'auto' }}
+                      />
+                    </a>
+                  </div>
+
                   <button
                     type="button"
                     onClick={() => setResult(null)}
@@ -486,7 +652,7 @@ export function LandingPage() {
                       color: 'var(--color-text-secondary)',
                       fontWeight: 600,
                       cursor: 'pointer',
-                      marginTop: '0.5rem',
+                      marginTop: '0.75rem',
                     }}
                   >
                     Create another
@@ -592,14 +758,31 @@ export function LandingPage() {
                   )}
 
                   <div className="form-field">
-                    <button className="btn-primary" type="submit" disabled={isLoading} style={{ marginTop: '1.25rem' }}>
-                      {isLoading ? 'Processing...' : 'Turn my photo into a free page'}
+                    <button
+                      className="btn-primary"
+                      type="submit"
+                      disabled={isLoading}
+                      style={{
+                        marginTop: '1.25rem',
+                        background: photo ? '#17494e' : undefined,
+                      }}
+                    >
+                      {isLoading ? 'Processing...' : photo ? 'Get my line art' : 'Turn my photo into a free page'}
                     </button>
                   </div>
                 </form>
 
                 <p className="hero-form-footer">
                   Your photos stay private. They are deleted right after your page downloads.
+                </p>
+                <p className="hero-form-footer" style={{ marginTop: '0.35rem' }}>
+                  Got feedback?{' '}
+                  <a
+                    href="mailto:team@photolineart.com?subject=PhotoLineArt%20feedback"
+                    style={{ color: 'var(--color-cta-primary)', fontWeight: 700 }}
+                  >
+                    Tell us here
+                  </a>
                 </p>
               </div>
             )}
@@ -912,6 +1095,10 @@ export function LandingPage() {
             <a href="#terms">Terms</a>
             <span>|</span>
             <a href="#contact">Contact</a>
+            <span>|</span>
+            <a href="https://buymeacoffee.com/photolineart" target="_blank" rel="noreferrer">
+              Buy us a coffee
+            </a>
           </nav>
           <p className="footer-note">
             PhotoLineArt uses AI to help create line art and color guides from your photos. We treat your images and personal data with care. See our Privacy Policy
