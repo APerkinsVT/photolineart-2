@@ -38,6 +38,8 @@ export function LandingPage() {
   const [originalFileName, setOriginalFileName] = useState('');
   const [fcPalette, setFcPalette] = useState<FCPaletteEntry[]>([]);
   const [newsletterOptIn, setNewsletterOptIn] = useState(false);
+  const [downloadComplete, setDownloadComplete] = useState(false);
+  const [rating, setRating] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
   const [feedback, setFeedback] = useState<FeedbackState>({ message: '', type: '' });
@@ -117,13 +119,14 @@ export function LandingPage() {
 
     statusTimers.current.forEach((id) => window.clearTimeout(id));
     statusTimers.current = [];
-    setIsLoading(true);
-    setResult(null);
-    setOriginalFileName(photo.name || '');
-    setStatus('uploading');
-    setFeedback({
-      message: 'Uploading your photo...',
-      type: 'processing',
+      setIsLoading(true);
+      setResult(null);
+      setDownloadComplete(false);
+      setOriginalFileName(photo.name || '');
+      setStatus('uploading');
+      setFeedback({
+        message: 'Uploading your photo...',
+        type: 'processing',
     });
 
     try {
@@ -269,100 +272,14 @@ export function LandingPage() {
                       style={{ width: '100%', height: 'auto', objectFit: 'contain', maxHeight: '420px', display: 'block' }}
                     />
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'center' }}>
-                    <div style={{ width: '80px', height: '80px', overflow: 'hidden', borderRadius: '0.75rem', border: '1px solid var(--color-border)' }}>
+                    <div style={{ display: 'flex', justifyContent: 'center' }}>
+                    <div style={{ width: '120px', height: '120px', overflow: 'hidden', borderRadius: '0.75rem', border: '1px solid var(--color-border)' }}>
                       <img
                         src={result.analysis.sourceImageUrl}
                         alt="Original Reference"
                         style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
                       />
                     </div>
-                  </div>
-
-                  <div style={{ textAlign: 'center', marginTop: '0.65rem', color: 'var(--color-text-secondary)', fontWeight: 700 }}>
-                    Share on…
-                  </div>
-                  <div
-                    style={{
-                      display: 'flex',
-                      gap: '0.5rem',
-                      justifyContent: 'center',
-                      alignItems: 'center',
-                      flexWrap: 'wrap',
-                      marginTop: '0.35rem',
-                      marginBottom: '0.5rem',
-                    }}
-                  >
-                    <a
-                      href="https://www.twitter.com/intent/tweet?text=I%20just%20turned%20a%20photo%20into%20line%20art%20with%20PhotoLineArt&url=https%3A%2F%2Fphotolineart.com"
-                      target="_blank"
-                      rel="noreferrer"
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        width: '36px',
-                        height: '36px',
-                        borderRadius: '999px',
-                        border: '1px solid #d1d5db',
-                        background: '#f9fafb',
-                      }}
-                    >
-                      <img src="/icons/X-logo-black.png" alt="X" style={{ width: 18, height: 18 }} />
-                    </a>
-                    <a
-                      href="https://www.facebook.com/sharer/sharer.php?u=https%3A%2F%2Fphotolineart.com"
-                      target="_blank"
-                      rel="noreferrer"
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        width: '36px',
-                        height: '36px',
-                        borderRadius: '999px',
-                        border: '1px solid #d1d5db',
-                        background: '#f9fafb',
-                      }}
-                    >
-                      <img src="/icons/Facebook_Logo_Primary.png" alt="Facebook" style={{ width: 18, height: 18 }} />
-                    </a>
-                    <a
-                      href="https://www.linkedin.com/sharing/share-offsite/?url=https%3A%2F%2Fphotolineart.com"
-                      target="_blank"
-                      rel="noreferrer"
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        width: '36px',
-                        height: '36px',
-                        borderRadius: '999px',
-                        border: '1px solid #d1d5db',
-                        background: '#f9fafb',
-                      }}
-                    >
-                      <img src="/icons/LI-Logo.png" alt="LinkedIn" style={{ width: 18, height: 18 }} />
-                    </a>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'center', marginTop: '0.5rem' }}>
-                    <a
-                      href="https://www.buymeacoffee.com/photolineart"
-                      target="_blank"
-                      rel="noreferrer"
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '0.4rem',
-                        textDecoration: 'none',
-                      }}
-                    >
-                      <img
-                        src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png"
-                        alt="Buy Me A Coffee"
-                        style={{ height: '36px', width: 'auto' }}
-                      />
-                    </a>
                   </div>
 
                   {(() => {
@@ -467,6 +384,41 @@ export function LandingPage() {
                     </div>
                   </div>
 
+                  <div style={{ textAlign: 'center', marginTop: '1rem', marginBottom: '0.25rem' }}>
+                    <div style={{ color: 'var(--color-text-secondary)', fontWeight: 700, marginBottom: '0.3rem' }}>
+                      Rate your line art as a coloring page
+                    </div>
+                    <div style={{ display: 'inline-flex', gap: '0.35rem' }}>
+                      {[1, 2, 3, 4, 5].map((star) => (
+                        <button
+                          key={star}
+                          type="button"
+                          onClick={() => {
+                            setRating(star);
+                            if (typeof window !== 'undefined' && (window as any).gtag) {
+                              (window as any).gtag('event', 'rating_submit', {
+                                event_category: 'feedback',
+                                event_label: 'lineart_rating',
+                                value: star,
+                              });
+                            }
+                          }}
+                          aria-label={`Rate ${star} star${star > 1 ? 's' : ''}`}
+                          style={{
+                            background: 'none',
+                            border: 'none',
+                            fontSize: '1.4rem',
+                            cursor: 'pointer',
+                            color: star <= rating ? '#f59e0b' : '#d1d5db',
+                            padding: 0,
+                          }}
+                        >
+                          ★
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
                   <div style={{ display: 'grid', gap: '0.5rem', marginTop: '1.25rem' }}>
                     <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.95rem', color: 'var(--color-text-primary)', fontWeight: 500 }}>
                       <input
@@ -501,8 +453,13 @@ export function LandingPage() {
                     <button
                       className="btn-primary"
                       type="button"
-                      disabled={!email || isDownloading}
+                      disabled={(!email && !downloadComplete) || isDownloading}
                       onClick={async () => {
+                        if (downloadComplete) {
+                          setResult(null);
+                          setDownloadComplete(false);
+                          return;
+                        }
                         if (!email || !result) return;
                         try {
                           setIsDownloading(true);
@@ -537,6 +494,7 @@ export function LandingPage() {
                           } catch (delErr) {
                             console.warn('Asset delete failed (continuing):', delErr);
                           }
+                          setDownloadComplete(true);
                         } catch (err) {
                           console.error('Download failed', err);
                           setFeedback({
@@ -548,115 +506,20 @@ export function LandingPage() {
                         }
                       }}
                       style={{
-                        opacity: email && !isDownloading ? 1 : 0.6,
-                        cursor: email && !isDownloading ? 'pointer' : 'not-allowed',
+                        opacity: (email && !isDownloading) || downloadComplete ? 1 : 0.6,
+                        cursor: (email && !isDownloading) || downloadComplete ? 'pointer' : 'not-allowed',
                       }}
                     >
                       <Download size={18} style={{ marginRight: '0.5rem' }} />
-                      {isDownloading ? 'Preparing PDF...' : 'Download Coloring Page'}
+                      {downloadComplete
+                        ? isDownloading
+                          ? 'Deleting your originals…'
+                          : 'Create another'
+                        : isDownloading
+                          ? 'Preparing PDF...'
+                          : 'Download Coloring Page'}
                     </button>
                   </div>
-
-                  <div style={{ textAlign: 'center', marginTop: '0.65rem', color: 'var(--color-text-secondary)', fontWeight: 700 }}>
-                    Share on…
-                  </div>
-                  <div
-                    style={{
-                      display: 'flex',
-                      gap: '0.5rem',
-                      justifyContent: 'center',
-                      alignItems: 'center',
-                      flexWrap: 'wrap',
-                      marginTop: '0.35rem',
-                      marginBottom: '0.5rem',
-                    }}
-                  >
-                    <a
-                      href="https://www.twitter.com/intent/tweet?text=I%20just%20turned%20a%20photo%20into%20line%20art%20with%20PhotoLineArt&url=https%3A%2F%2Fphotolineart.com"
-                      target="_blank"
-                      rel="noreferrer"
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        width: '36px',
-                        height: '36px',
-                        borderRadius: '999px',
-                        border: '1px solid #d1d5db',
-                        background: '#f9fafb',
-                      }}
-                    >
-                      <img src="/icons/X-logo-black.png" alt="X" style={{ width: 18, height: 18 }} />
-                    </a>
-                    <a
-                      href="https://www.facebook.com/sharer/sharer.php?u=https%3A%2F%2Fphotolineart.com"
-                      target="_blank"
-                      rel="noreferrer"
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        width: '36px',
-                        height: '36px',
-                        borderRadius: '999px',
-                        border: '1px solid #d1d5db',
-                        background: '#f9fafb',
-                      }}
-                    >
-                      <img src="/icons/Facebook_Logo_Primary.png" alt="Facebook" style={{ width: 18, height: 18 }} />
-                    </a>
-                    <a
-                      href="https://www.linkedin.com/sharing/share-offsite/?url=https%3A%2F%2Fphotolineart.com"
-                      target="_blank"
-                      rel="noreferrer"
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        width: '36px',
-                        height: '36px',
-                        borderRadius: '999px',
-                        border: '1px solid #d1d5db',
-                        background: '#f9fafb',
-                      }}
-                    >
-                      <img src="/icons/LI-Logo.png" alt="LinkedIn" style={{ width: 18, height: 18 }} />
-                    </a>
-                  </div>
-                  <div style={{ display: 'flex', justifyContent: 'center', marginTop: '0.5rem' }}>
-                    <a
-                      href="https://www.buymeacoffee.com/photolineart"
-                      target="_blank"
-                      rel="noreferrer"
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '0.4rem',
-                        textDecoration: 'none',
-                      }}
-                    >
-                      <img
-                        src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png"
-                        alt="Buy Me A Coffee"
-                        style={{ height: '36px', width: 'auto' }}
-                      />
-                    </a>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => setResult(null)}
-                    style={{
-                      background: 'none',
-                      border: 'none',
-                      color: 'var(--color-text-secondary)',
-                      fontWeight: 600,
-                      cursor: 'pointer',
-                      marginTop: '0.75rem',
-                    }}
-                  >
-                    Create another
-                  </button>
                 </div>
               </div>
             ) : (
@@ -787,6 +650,120 @@ export function LandingPage() {
               </div>
             )}
           </div>
+
+          {result && (
+            <div
+              style={{
+                marginTop: '1.2rem',
+                padding: '1rem 1.25rem',
+                background: '#f7f3ec',
+                borderRadius: '0.9rem',
+                border: '1px solid var(--color-border)',
+                boxShadow: '0 8px 24px rgba(0,0,0,0.06)',
+                textAlign: 'center',
+              }}
+            >
+              <div style={{ color: 'var(--color-text-secondary)', fontWeight: 700, marginBottom: '0.35rem' }}>
+                Share on…
+              </div>
+              <div
+                style={{
+                  display: 'flex',
+                  gap: '0.45rem',
+                  justifyContent: 'center',
+                  alignItems: 'center',
+                  flexWrap: 'wrap',
+                  marginTop: '0.2rem',
+                  marginBottom: '0.5rem',
+                }}
+              >
+                <a
+                  href="https://www.twitter.com/intent/tweet?text=I%20just%20turned%20a%20photo%20into%20line%20art%20with%20PhotoLineArt&url=https%3A%2F%2Fphotolineart.com"
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: '36px',
+                    height: '36px',
+                    borderRadius: '999px',
+                    border: '1px solid #d1d5db',
+                    background: '#f9fafb',
+                  }}
+                >
+                  <img src="/icons/X-logo-black.png" alt="X" style={{ width: 18, height: 18 }} />
+                </a>
+                <a
+                  href="https://www.facebook.com/sharer/sharer.php?u=https%3A%2F%2Fphotolineart.com"
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: '36px',
+                    height: '36px',
+                    borderRadius: '999px',
+                    border: '1px solid #d1d5db',
+                    background: '#f9fafb',
+                  }}
+                >
+                  <img src="/icons/Facebook_Logo_Primary.png" alt="Facebook" style={{ width: 18, height: 18 }} />
+                </a>
+                <a
+                  href="https://www.linkedin.com/sharing/share-offsite/?url=https%3A%2F%2Fphotolineart.com"
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: '36px',
+                    height: '36px',
+                    borderRadius: '999px',
+                    border: '1px solid #d1d5db',
+                    background: '#f9fafb',
+                  }}
+                >
+                  <img src="/icons/LI-Logo.png" alt="LinkedIn" style={{ width: 18, height: 18 }} />
+                </a>
+              </div>
+              <div style={{ display: 'flex', justifyContent: 'center', marginTop: '0.35rem' }}>
+                <a
+                  href="https://www.buymeacoffee.com/photolineart"
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '0.4rem',
+                    textDecoration: 'none',
+                  }}
+                >
+                  <img
+                    src="https://cdn.buymeacoffee.com/buttons/v2/default-yellow.png"
+                    alt="Buy Me A Coffee"
+                    style={{ height: '36px', width: 'auto' }}
+                  />
+                </a>
+              </div>
+              <button
+                type="button"
+                onClick={() => setResult(null)}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  color: 'var(--color-text-secondary)',
+                  fontWeight: 600,
+                  cursor: 'pointer',
+                  marginTop: '0.7rem',
+                }}
+              >
+                Create another
+              </button>
+            </div>
+          )}
         </div>
       </section>
 
