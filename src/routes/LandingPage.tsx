@@ -476,6 +476,8 @@ export function LandingPage() {
                                 pdfBase64: dataUrl,
                                 filename: fileName,
                                 subject: 'Your PhotoLineArt coloring page',
+                                optIn: newsletterOptIn,
+                                rating: rating || undefined,
                               }),
                             });
                           } catch (mailErr) {
