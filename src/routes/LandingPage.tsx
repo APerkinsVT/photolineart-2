@@ -465,6 +465,7 @@ export function LandingPage() {
                           setIsDownloading(true);
                           const item = buildPhotoItemFromResult(result);
                           await downloadPdfForItem(item, window.location.origin);
+                          setDownloadComplete(true);
                           try {
                             const { dataUrl, fileName } = await buildPdfDataUrlForItem(item, window.location.origin);
                             await fetch('/api/send-pdf', {
@@ -494,7 +495,6 @@ export function LandingPage() {
                           } catch (delErr) {
                             console.warn('Asset delete failed (continuing):', delErr);
                           }
-                          setDownloadComplete(true);
                         } catch (err) {
                           console.error('Download failed', err);
                           setFeedback({
