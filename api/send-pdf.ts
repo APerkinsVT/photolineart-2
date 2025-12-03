@@ -25,7 +25,10 @@ function getRequiredEnv(name: string) {
 
 async function appendEmailLog(email: string, optIn: boolean, rating?: number) {
   const token = process.env.BLOB_READ_WRITE_TOKEN;
-  if (!token) return;
+  if (!token) {
+    console.warn('Email log skipped: missing BLOB_READ_WRITE_TOKEN');
+    return;
+  }
 
   const logPath = 'logs/email-captures.csv';
   let existing = '';
@@ -56,6 +59,7 @@ async function appendEmailLog(email: string, optIn: boolean, rating?: number) {
       token,
       contentType: 'text/csv',
     });
+    console.log('Email log appended to', logPath);
   } catch (err) {
     console.warn('Unable to write email log (continuing):', err);
   }
@@ -117,7 +121,13 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     };
 
     await transporter.sendMail(mailOptions);
-    appendEmailLog(parsed.to, parsed.optIn, parsed.rating).catch((err) => console.warn('Log append failed', err));
+
+    try {
+      await appendEmailLog(parsed.to, parsed.optIn, parsed.rating);
+    } catch (err) {
+      console.warn('Log append failed', err);
+    }
+
     return res.status(200).json({ ok: true });
   } catch (err: any) {
     console.error('send-pdf error', err);
