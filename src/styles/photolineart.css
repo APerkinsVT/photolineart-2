@@ -274,6 +274,11 @@ a {
   font-size: 0.95rem;
 }
 
+.input-text::placeholder {
+  color: #9ca3af;
+  opacity: 1;
+}
+
 .input-text:focus,
 .input-file:focus {
   outline: none;

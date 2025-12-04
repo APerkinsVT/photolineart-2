@@ -35,6 +35,7 @@ type StatusState =
 export function LandingPage() {
   const [email, setEmail] = useState('');
   const [photo, setPhoto] = useState<File | null>(null);
+  const [customTitle, setCustomTitle] = useState('');
   const [originalFileName, setOriginalFileName] = useState('');
   const [fcPalette, setFcPalette] = useState<FCPaletteEntry[]>([]);
   const [newsletterOptIn, setNewsletterOptIn] = useState(false);
@@ -117,16 +118,27 @@ export function LandingPage() {
       return;
     }
 
+    const formatTitle = (val: string) => {
+      const base = val.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ').trim();
+      if (!base) return '';
+      return base
+        .split(' ')
+        .filter(Boolean)
+        .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+        .join(' ');
+    };
+
     statusTimers.current.forEach((id) => window.clearTimeout(id));
     statusTimers.current = [];
-      setIsLoading(true);
-      setResult(null);
-      setDownloadComplete(false);
-      setOriginalFileName(photo.name || '');
-      setStatus('uploading');
-      setFeedback({
-        message: 'Uploading your photo...',
-        type: 'processing',
+    setIsLoading(true);
+    setResult(null);
+    setDownloadComplete(false);
+    const formattedTitle = formatTitle(customTitle || photo.name || 'photolineart');
+    setOriginalFileName(formattedTitle);
+    setStatus('uploading');
+    setFeedback({
+      message: 'Uploading your photo...',
+      type: 'processing',
     });
 
     try {
@@ -188,6 +200,7 @@ export function LandingPage() {
       setStatus('ready');
       setEmail('');
       setPhoto(null);
+      setCustomTitle('');
     } catch (error: any) {
       console.error('Generation failed:', error);
       let msg = 'Something went wrong. Please try again.';
@@ -263,7 +276,9 @@ export function LandingPage() {
           <div id="hero-form" className="hero-form">
             {result ? (
               <div>
-                <h3 className="hero-form-title">Your Coloring Page is Ready!</h3>
+                <h3 className="hero-form-title">
+                  {customTitle || originalFileName || 'Your Coloring Page is Ready!'}
+                </h3>
                 <div style={{ display: 'grid', gap: '1.25rem' }}>
                   <div style={{ overflow: 'hidden', borderRadius: '1rem', border: '1px solid var(--color-border)', background: '#f9fafb' }}>
                     <img
@@ -545,6 +560,24 @@ export function LandingPage() {
                     />
                     <p className="form-hint">JPG or PNG, up to 10 MB. Clear, well-lit photos work best.</p>
                   </div>
+
+                  {photo && (
+                    <div className="form-field">
+                      <label className="form-label" htmlFor="title">
+                        Optional title for your page
+                      </label>
+                      <input
+                        className="input-text"
+                        id="title"
+                        name="title"
+                        type="text"
+                        placeholder="e.g., Sunset at the beach"
+                        value={customTitle}
+                        onChange={(e) => setCustomTitle(e.target.value)}
+                      />
+                      <p className="form-hint">We’ll use this as the page title. If left blank, we’ll use your file name.</p>
+                    </div>
+                  )}
 
                   {status !== 'idle' && status !== 'ready' && status !== 'error' && (
                     <div
