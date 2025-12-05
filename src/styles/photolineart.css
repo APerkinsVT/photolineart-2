@@ -253,6 +253,21 @@ a {
   margin-bottom: 1.5rem;
 }
 
+.upload-dropzone {
+  margin-top: 0.5rem;
+  padding: 1.75rem;
+  border: 2px dashed var(--color-border);
+  border-radius: 16px;
+  background: #fff;
+  text-align: center;
+  transition: border-color 0.2s ease, background-color 0.2s ease;
+}
+
+.upload-dropzone:hover {
+  border-color: var(--color-cta-primary);
+  background: #f9fafb;
+}
+
 .form-field {
   margin-bottom: 1.5rem;
 }

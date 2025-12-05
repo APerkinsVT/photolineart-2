@@ -22,21 +22,31 @@ export function BatchSummary({
   }
 
   return (
-    <div className="mt-8 rounded-2xl border border-slate-200 bg-white px-5 py-4 text-sm text-slate-600 shadow-sm">
-      <div className="flex flex-wrap items-center gap-4">
-        <span className="font-semibold text-slate-900">{total} photo(s)</span>
-        <span className="text-slate-400">•</span>
+    <div
+      style={{
+        marginTop: '0.5rem',
+        borderRadius: '12px',
+        border: '1px solid var(--color-border)',
+        background: '#f9fafb',
+        padding: '0.9rem 1rem',
+        color: 'var(--color-text-secondary)',
+        fontSize: '0.95rem',
+      }}
+    >
+      <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.6rem', alignItems: 'center' }}>
+        <span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>{total} photo(s)</span>
+        <span>•</span>
         <span>{formatBytes(totalBytes)} total</span>
-        <span className="text-slate-400">•</span>
+        <span>•</span>
         <span>{uploading} uploading</span>
-        <span className="text-slate-400">•</span>
+        <span>•</span>
         <span>{processing} with AI</span>
-        <span className="text-slate-400">•</span>
+        <span>•</span>
         <span>{ready} ready</span>
         {failed > 0 && (
           <>
-            <span className="text-slate-400">•</span>
-            <span className="text-rose-500">{failed} failed</span>
+            <span>•</span>
+            <span style={{ color: '#b91c1c', fontWeight: 600 }}>{failed} failed</span>
           </>
         )}
       </div>

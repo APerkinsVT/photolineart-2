@@ -838,6 +838,34 @@ export function LandingPage() {
         </div>
       </section>
 
+      {/* Book teaser */}
+      <section className="section section--white">
+        <div className="container" style={{ textAlign: 'center', maxWidth: '860px' }}>
+          <p className="section-heading" style={{ marginBottom: '0.35rem' }}>
+            Build a full coloring book from many photos
+          </p>
+          <p className="problem-subtitle" style={{ marginBottom: '1rem' }}>
+            Upload up to 10 photos → get a printable book, portal link, and QR for gifting.
+          </p>
+          <div
+            style={{
+              display: 'grid',
+              gap: '0.5rem',
+              justifyItems: 'center',
+              marginBottom: '0.75rem',
+              color: 'var(--color-text-secondary)',
+              fontSize: '0.95rem',
+            }}
+          >
+            <span>Auto-published with a portal link and a QR so you can return anytime.</span>
+            <span>Pages follow your upload order—no extra steps required.</span>
+          </div>
+          <a href="/studio" className="btn-primary">
+            Build my coloring book
+          </a>
+        </div>
+      </section>
+
       {/* Solution / how it works */}
       <section id="how-it-works" className="section section--base">
         <div className="container">

@@ -12,14 +12,24 @@ interface BatchListProps {
 export function BatchList({ items, onRetry, onRemove, portalUrl, qrPngUrl }: BatchListProps) {
   if (items.length === 0) {
     return (
-      <div className="mt-10 rounded-2xl border border-dashed border-slate-200 bg-white/80 px-6 py-12 text-center text-slate-400">
+      <div
+        style={{
+          marginTop: '1.5rem',
+          borderRadius: '14px',
+          border: '2px dashed var(--color-border)',
+          background: '#fff',
+          padding: '1.5rem',
+          textAlign: 'center',
+          color: 'var(--color-text-secondary)',
+        }}
+      >
         Added photos will appear here with status, progress, and actions.
       </div>
     );
   }
 
   return (
-    <div className="mt-8 grid gap-4">
+    <div style={{ marginTop: '1.25rem', display: 'grid', gap: '1rem' }}>
       {items.map((item) => (
         <PhotoItemCard
           key={item.id}

@@ -14,7 +14,6 @@ export function UploadPage() {
     retryUpload,
     removeItem,
     stats,
-    isBusy,
     portal,
     bundle,
     isPublishing,
@@ -102,7 +101,7 @@ export function UploadPage() {
       )}
 
         <div className="space-y-6">
-          <UploadDropzone onFilesSelected={handleAddFiles} isBusy={isBusy} />
+          <UploadDropzone onFilesSelected={handleAddFiles} />
           <BatchSummary {...stats} />
           {portal?.portalUrl && (
             <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600">

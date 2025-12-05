@@ -30,9 +30,10 @@ export function PdfDownloadButton({ item, portalUrl, qrPngUrl }: PdfDownloadButt
   return (
     <button
       type="button"
-      className="rounded-full border border-brand px-4 py-1.5 text-sm font-medium text-brand hover:bg-brand hover:text-white disabled:cursor-not-allowed disabled:opacity-60"
+      className="btn-primary"
       onClick={onClick}
       disabled={isGenerating}
+      style={{ opacity: isGenerating ? 0.7 : 1, minWidth: '140px' }}
     >
       {isGenerating ? 'Building PDF…' : 'Download PDF'}
     </button>

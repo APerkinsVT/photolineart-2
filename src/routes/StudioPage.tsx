@@ -4,8 +4,7 @@ import { BatchSummary } from '../components/BatchSummary';
 import { UploadDropzone } from '../components/UploadDropzone';
 import { useBatchUploader } from '../state/useBatchUploader';
 import { DiagnosticsPanel } from '../components/DiagnosticsPanel';
-import { HeroSection } from '../components/HeroSection';
-import { HowItWorksSection } from '../components/HowItWorksSection';
+import { nanoid } from 'nanoid';
 
 export function StudioPage() {
   const {
@@ -14,7 +13,6 @@ export function StudioPage() {
     retryUpload,
     removeItem,
     stats,
-    isBusy,
     portal,
     bundle,
     isPublishing,
@@ -28,135 +26,351 @@ export function StudioPage() {
   const [alerts, setAlerts] = useState<string[]>([]);
   const [showDiagnostics, setShowDiagnostics] = useState(false);
   const creatorRef = useRef<HTMLDivElement | null>(null);
+  const listRef = useRef<HTMLDivElement | null>(null);
+  const [staged, setStaged] = useState<{ id: string; file: File; preview: string; selected: boolean }[]>([]);
+  const selectedCount = staged.filter((s) => s.selected).length;
 
   const handleAddFiles = async (files: FileList | File[]) => {
+    const incoming = Array.from(files);
+    const maxCount = 10;
+    const selectedCount = staged.filter((s) => s.selected).length;
+
+    const next = incoming.map((file, index) => ({
+      id: nanoid(),
+      file,
+      preview: URL.createObjectURL(file),
+      selected: selectedCount + index < maxCount,
+    }));
+
+    if (next.length > 0) {
+      setStaged((prev) => [...prev, ...next]);
+    }
+  };
+
+  const toggleStaged = (id: string) => {
+    setStaged((prev) =>
+      prev.map((item) => (item.id === id ? { ...item, selected: !item.selected } : item)),
+    );
+  };
+
+  const startProcessing = async () => {
+    const selected = staged.filter((s) => s.selected);
+    if (selected.length === 0) {
+      setAlerts(['Select at least one photo to start processing.']);
+      setTimeout(() => setAlerts([]), 3000);
+      return;
+    }
+    const files = selected.map((s) => s.file);
     const result = await addFiles(files);
     if (result.errors.length > 0) {
       setAlerts(result.errors);
       setTimeout(() => setAlerts([]), 5000);
     }
+    // remove those sent
+    setStaged((prev) => {
+      prev.forEach((p) => {
+        if (selected.find((s) => s.id === p.id)) {
+          URL.revokeObjectURL(p.preview);
+        }
+      });
+      return prev.filter((p) => !selected.find((s) => s.id === p.id));
+    });
   };
 
   return (
-    <section
-      className="space-y-10 text-base text-slate-700"
-      style={{ margin: '0 auto', maxWidth: '820px', width: '100%' }}
-    >
-      <HeroSection onGetStarted={() => creatorRef.current?.scrollIntoView({ behavior: 'smooth' })} />
-      <HowItWorksSection />
-      <div
-        className="space-y-6 rounded-3xl border border-slate-200 bg-white/95 p-6 shadow-2xl shadow-slate-200 sm:p-10"
-        ref={creatorRef}
-      >
-        <div className="space-y-3 text-center">
-          <p className="text-sm font-semibold uppercase tracking-wide text-brand">Creator console</p>
-          <h1 className="font-display text-4xl font-semibold text-slate-900">
-            Upload photos for line art
-          </h1>
-          <p className="mx-auto max-w-2xl text-base text-slate-600">
-            Drag-and-drop multiple photos, watch their pipeline status, and publish polished portals
-            + coloring books. This console surfaces the diagnostics we need while we gear up for
-            broader release.
-          </p>
-          <div className="pt-4">
-            <label className="text-sm font-medium text-slate-600">Available FC set</label>
-            <div className="mt-2 flex flex-col items-center gap-3 sm:flex-row sm:justify-center">
-              <select
-                className="w-full max-w-xs rounded-2xl border border-slate-300 bg-white px-3 py-2 text-sm text-slate-700 focus:border-brand focus:outline-none"
-                value={setSize}
-                onChange={(event) => setSetSize(Number(event.target.value))}
-              >
-                {[120, 72, 60, 36, 24, 12].map((size) => (
-                  <option key={size} value={size}>
-                    {size}-pencil set
-                  </option>
-                ))}
-              </select>
-              <p className="text-xs text-slate-500">
-                Tips + palette will only use colors from the selected Polychromos set.
-              </p>
+    <div className="page" style={{ paddingBottom: '4rem' }}>
+      <section className="section section--base">
+        <div className="container hero">
+          <div className="hero-inner" style={{ textAlign: 'center' }}>
+            <p className="problem-subtitle" style={{ textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.05em' }}>
+              Creator Console
+            </p>
+            <h1 className="hero-heading">Build a coloring book from many photos</h1>
+            <p className="hero-lead">
+              Upload up to 10 photos, get clean line art + palettes, and auto-publish a printable book with a portal link and QR for gifting.
+            </p>
+            <div className="hero-cta">
+              <a href="#studio-console" className="btn-primary" onClick={() => creatorRef.current?.scrollIntoView({ behavior: 'smooth' })}>
+                Start my book
+              </a>
             </div>
           </div>
         </div>
+      </section>
 
-      {(alerts.length > 0 || lastError) && (
-        <div className="mt-4 rounded-2xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-800">
-          <ul className="list-disc space-y-1 pl-5">
-            {alerts.map((message, index) => (
-              <li key={`${message}-${index}`}>{message}</li>
-            ))}
-            {lastError && (
-              <li className="flex items-center justify-between gap-4">
-                <span>{lastError}</span>
+      <section id="studio-console" className="section section--white">
+        <div className="container" style={{ maxWidth: '900px' }} ref={creatorRef}>
+          <div
+            style={{
+              background: '#fff',
+              borderRadius: '18px',
+              border: '1px solid var(--color-border)',
+              boxShadow: '0 16px 40px rgba(0,0,0,0.08)',
+              padding: '1.75rem',
+            }}
+          >
+            <div style={{ textAlign: 'center', marginBottom: '1.25rem' }}>
+              <p style={{ fontSize: '0.85rem', fontWeight: 700, color: 'var(--color-cta-primary)', textTransform: 'uppercase', letterSpacing: '0.05em' }}>
+                Upload console
+              </p>
+              <h2 className="section-heading" style={{ marginBottom: '0.5rem' }}>
+                Upload and publish automatically
+              </h2>
+              <p style={{ maxWidth: '640px', margin: '0 auto', color: 'var(--color-text-secondary)', lineHeight: 1.6 }}>
+                Drag-and-drop multiple photos, watch their status, and we’ll publish a portal + printable book automatically. Pages follow your upload order—no extra steps required.
+              </p>
+              <div style={{ marginTop: '1rem' }}>
+                <label style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--color-text-primary)' }}>Available Faber-Castell set</label>
+                <div style={{ marginTop: '0.5rem', display: 'flex', gap: '0.75rem', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap' }}>
+                  <select
+                    value={setSize}
+                    onChange={(event) => setSetSize(Number(event.target.value))}
+                    style={{
+                      borderRadius: '12px',
+                      border: '1px solid var(--color-border)',
+                      padding: '0.5rem 0.75rem',
+                      minWidth: '200px',
+                    }}
+                  >
+                    {[120, 72, 60, 36, 24, 12].map((size) => (
+                      <option key={size} value={size}>
+                        {size}-pencil set
+                      </option>
+                    ))}
+                  </select>
+                  <p style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>
+                    Palettes + tips will respect the selected Polychromos set.
+                  </p>
+                </div>
+              </div>
+            </div>
+
+            {(alerts.length > 0 || lastError) && (
+              <div
+                style={{
+                  marginTop: '1rem',
+                  borderRadius: '12px',
+                  border: '1px solid #fcd34d',
+                  background: '#fffbeb',
+                  padding: '0.75rem 1rem',
+                  color: '#92400e',
+                  fontSize: '0.95rem',
+                }}
+              >
+                <ul style={{ margin: 0, paddingLeft: '1.25rem' }}>
+                  {alerts.map((message, index) => (
+                    <li key={`${message}-${index}`}>{message}</li>
+                  ))}
+                  {lastError && (
+                    <li>
+                      {lastError}{' '}
+                      <button
+                        type="button"
+                        onClick={clearError}
+                        style={{
+                          marginLeft: '0.5rem',
+                          border: '1px solid #fbbf24',
+                          borderRadius: '999px',
+                          padding: '0.15rem 0.6rem',
+                          fontSize: '0.8rem',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        Dismiss
+                      </button>
+                    </li>
+                  )}
+                </ul>
+              </div>
+            )}
+
+            <div style={{ display: 'grid', gap: '1.25rem', marginTop: '1.25rem' }}>
+              <UploadDropzone
+                onFilesSelected={handleAddFiles}
+                currentCount={selectedCount}
+              />
+
+              {staged.length > 0 && (
+                <div
+                  style={{
+                    border: '1px solid var(--color-border)',
+                    borderRadius: '12px',
+                    padding: '0.75rem',
+                    background: '#fff',
+                  }}
+                >
+                  <div
+                    style={{
+                      marginBottom: '0.6rem',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      color: 'var(--color-text-secondary)',
+                      fontSize: '0.9rem',
+                      flexWrap: 'wrap',
+                      gap: '0.4rem',
+                    }}
+                  >
+                    <span>
+                      {selectedCount} selected • {staged.length} staged
+                    </span>
+                  </div>
+                  <div
+                    style={{
+                      display: 'grid',
+                      gap: '0.75rem',
+                      gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
+                    }}
+                  >
+                    {staged.map((item) => (
+                      <div
+                        key={item.id}
+                        style={{
+                          border: '1px solid var(--color-border)',
+                          borderRadius: '10px',
+                          padding: '0.4rem',
+                          textAlign: 'center',
+                          background: '#fff',
+                          position: 'relative',
+                        }}
+                      >
+                        <div style={{ width: '100%', paddingTop: '100%', position: 'relative', overflow: 'hidden', borderRadius: '8px', background: '#f9fafb' }}>
+                          <img
+                            src={item.preview}
+                            alt={item.file.name}
+                            style={{
+                              position: 'absolute',
+                              top: 0,
+                              left: 0,
+                              width: '100%',
+                              height: '100%',
+                              objectFit: 'cover',
+                            }}
+                          />
+                        </div>
+                        <div style={{ marginTop: '0.35rem', fontSize: '0.8rem', color: 'var(--color-text-secondary)', minHeight: '2.2em' }}>
+                          {item.file.name}
+                        </div>
+                        <div style={{ marginTop: '0.3rem', display: 'flex', justifyContent: 'center' }}>
+                          <input
+                            type="checkbox"
+                            checked={item.selected}
+                            onChange={() => toggleStaged(item.id)}
+                            aria-label="Include in book"
+                            style={{ width: '18px', height: '18px' }}
+                          />
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{ marginTop: '0.6rem', textAlign: 'center' }}>
+                    {selectedCount > 10 && (
+                      <span style={{ color: '#b91c1c', fontWeight: 700, fontSize: '0.9rem' }}>
+                        Uncheck {selectedCount - 10} or more photos. Max = 10.
+                      </span>
+                    )}
+                  </div>
+                  <div style={{ marginTop: '0.5rem', display: 'flex', justifyContent: 'center' }}>
+                    <button
+                      type="button"
+                      className="btn-primary"
+                      onClick={startProcessing}
+                      disabled={selectedCount === 0 || selectedCount > 10}
+                      style={{ opacity: selectedCount === 0 || selectedCount > 10 ? 0.6 : 1 }}
+                    >
+                      Start processing ({selectedCount} selected)
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              <BatchSummary {...stats} />
+              {portal?.portalUrl && (
+                <div
+                  style={{
+                    borderRadius: '12px',
+                    border: '1px solid var(--color-border)',
+                    background: '#f9fafb',
+                    padding: '0.85rem 1rem',
+                    color: 'var(--color-text-secondary)',
+                  }}
+                >
+                  Portal ready:{' '}
+                  <a href={portal.portalUrl} style={{ color: 'var(--color-cta-primary)', fontWeight: 600 }}>
+                    {portal.portalUrl}
+                  </a>
+                </div>
+              )}
+              <div
+                style={{
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.75rem',
+                  alignItems: 'center',
+                  borderRadius: '12px',
+                  border: '1px solid var(--color-border)',
+                  background: '#f7f3ec',
+                  padding: '1rem',
+                }}
+              >
                 <button
                   type="button"
-                  className="rounded-full border border-amber-400 px-3 py-1 text-xs font-semibold text-amber-900"
-                  onClick={clearError}
+                  className="btn-primary"
+                  onClick={() => {
+                    void publishBundle();
+                  }}
+                  disabled={stats.ready === 0 || isPublishing}
+                  style={{ minWidth: '200px', opacity: stats.ready === 0 || isPublishing ? 0.6 : 1 }}
                 >
-                  Dismiss
+                  {bundle ? 'Published' : isPublishing ? 'Publishing…' : 'Publish bundle'}
                 </button>
-              </li>
-            )}
-          </ul>
-        </div>
-      )}
-
-        <div className="space-y-6">
-          <UploadDropzone onFilesSelected={handleAddFiles} isBusy={isBusy} />
-          <BatchSummary {...stats} />
-          {portal?.portalUrl && (
-            <div className="rounded-2xl border border-slate-200 bg-white px-4 py-3 text-sm text-slate-600">
-              Portal ready: <a href={portal.portalUrl}>{portal.portalUrl}</a>
+                {bundle && (
+                  <span style={{ fontSize: '0.9rem', color: 'var(--color-text-secondary)' }}>
+                    Manifest:{' '}
+                    <a href={bundle.manifestUrl} style={{ color: 'var(--color-cta-primary)', fontWeight: 600 }}>
+                      {bundle.portalUrl}
+                    </a>
+                  </span>
+                )}
+              </div>
             </div>
-          )}
-          <div className="flex flex-col items-center gap-4 rounded-2xl border border-slate-100 bg-slate-50/80 p-5 sm:flex-row sm:justify-between">
-            <button
-              type="button"
-              className="w-full rounded-full border border-brand bg-brand px-5 py-2 text-sm font-semibold text-white shadow-lg shadow-brand/30 transition hover:bg-slate-900 disabled:cursor-not-allowed disabled:opacity-60 sm:w-auto"
-              onClick={() => {
-                void publishBundle();
-              }}
-              disabled={stats.ready === 0 || isPublishing}
-            >
-              {bundle ? 'Published' : isPublishing ? 'Publishing…' : 'Publish bundle'}
-            </button>
-            {bundle && (
-              <span className="text-sm text-slate-600">
-                Manifest: <a href={bundle.manifestUrl}>{bundle.portalUrl}</a>
-              </span>
-            )}
+
+            <div style={{ marginTop: '1rem', borderRadius: '12px', border: '1px solid var(--color-border)', background: '#f9fafb', padding: '0.85rem 1rem' }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
+                <p style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--color-text-primary)' }}>Studio diagnostics</p>
+                <button
+                  type="button"
+                  onClick={() => setShowDiagnostics((prev) => !prev)}
+                  style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-cta-primary)', background: 'none', border: 'none', cursor: 'pointer' }}
+                >
+                  {showDiagnostics ? 'Hide' : 'Show'} details
+                </button>
+              </div>
+              {showDiagnostics ? (
+                <div style={{ marginTop: '0.5rem' }}>
+                  <DiagnosticsPanel summary={diagnostics} />
+                </div>
+              ) : (
+                <p style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>
+                  Live timing + publish stats (internal only) are available when you need them.
+                </p>
+              )}
+            </div>
           </div>
         </div>
+      </section>
 
-        <div className="space-y-3 rounded-2xl border border-slate-100 bg-slate-50/70 p-4">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="text-sm font-semibold text-slate-700">Studio diagnostics</p>
-            <button
-              type="button"
-              className="text-xs font-semibold uppercase tracking-wide text-brand"
-              onClick={() => setShowDiagnostics((prev) => !prev)}
-            >
-              {showDiagnostics ? 'Hide' : 'Show'} details
-            </button>
-          </div>
-          {showDiagnostics && <DiagnosticsPanel summary={diagnostics} />}
-          {!showDiagnostics && (
-            <p className="text-xs text-slate-500">
-              Live timing + publish stats (internal only) are available when you need them.
-            </p>
-          )}
+      <section className="section section--white" style={{ paddingTop: 0 }}>
+        <div className="container" style={{ maxWidth: '900px' }} ref={listRef}>
+          <BatchList
+            items={items}
+            onRetry={retryUpload}
+            onRemove={removeItem}
+            portalUrl={portal?.portalUrl}
+            qrPngUrl={portal?.qrPngUrl}
+          />
         </div>
-      </div>
-
-      <div className="mx-auto max-w-3xl">
-        <BatchList
-          items={items}
-          onRetry={retryUpload}
-          onRemove={removeItem}
-          portalUrl={portal?.portalUrl}
-          qrPngUrl={portal?.qrPngUrl}
-        />
-      </div>
-    </section>
+      </section>
+    </div>
   );
 }

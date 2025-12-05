@@ -3,24 +3,28 @@ import { cn } from '../utils/cn';
 
 interface UploadDropzoneProps {
   onFilesSelected: (files: FileList | File[]) => Promise<void> | void;
-  isBusy?: boolean;
+  currentCount?: number;
 }
 
-export function UploadDropzone({ onFilesSelected, isBusy }: UploadDropzoneProps) {
+export function UploadDropzone({ onFilesSelected, currentCount = 0 }: UploadDropzoneProps) {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [isDragging, setIsDragging] = useState(false);
+  const maxPhotos = 10;
+  const buttonLabel =
+    currentCount > 0 && currentCount < maxPhotos ? 'Add more photos' : 'Choose photos now';
 
   const handleFiles = useCallback(
     (files?: FileList | File[]) => {
       if (!files || files.length === 0) {
         return;
       }
+      if (currentCount >= maxPhotos) return;
       void onFilesSelected(files);
       if (inputRef.current) {
         inputRef.current.value = '';
       }
     },
-    [onFilesSelected],
+    [onFilesSelected, currentCount],
   );
 
   const onDrop = useCallback(
@@ -37,10 +41,11 @@ export function UploadDropzone({ onFilesSelected, isBusy }: UploadDropzoneProps)
 
   return (
     <div
-      className={cn(
-        'mt-6 flex flex-col items-center justify-center rounded-3xl border-2 border-dashed px-6 py-12 text-center transition',
-        isDragging ? 'border-brand bg-brand-subtle/30' : 'border-slate-300 bg-white',
-      )}
+      className={cn('upload-dropzone')}
+      style={{
+        borderColor: isDragging ? 'var(--color-cta-primary)' : undefined,
+        background: isDragging ? '#f0f9fb' : undefined,
+      }}
       onDragOver={(event) => {
         event.preventDefault();
         setIsDragging(true);
@@ -51,27 +56,29 @@ export function UploadDropzone({ onFilesSelected, isBusy }: UploadDropzoneProps)
       }}
       onDrop={onDrop}
     >
-      <p className="font-display text-2xl font-semibold text-slate-900">Drop your photos</p>
-      <p className="mt-2 text-sm text-slate-500">
-        JPG, PNG, or WebP • up to 3MB per image • 12MB per batch
+      <p style={{ fontSize: '1.35rem', fontWeight: 700, color: 'var(--color-text-primary)', marginBottom: '0.25rem' }}>
+        Drop your photos
       </p>
-      <div className="mt-6 flex gap-3">
+      <p style={{ fontSize: '0.95rem', color: 'var(--color-text-secondary)' }}>
+        JPG, PNG, or WebP • up to 3MB per image • 12MB per batch • Max 10 photos
+      </p>
+      <div style={{ marginTop: '0.9rem', display: 'flex', gap: '0.6rem', flexWrap: 'wrap', justifyContent: 'center' }}>
         <button
           type="button"
-          className="rounded-full bg-brand px-6 py-3 text-sm font-semibold text-white shadow hover:bg-slate-900 disabled:cursor-not-allowed disabled:opacity-70"
+          className="btn-primary"
           onClick={() => inputRef.current?.click()}
-          disabled={isBusy}
+          disabled={currentCount >= maxPhotos}
         >
-          {isBusy ? 'Working…' : 'Choose files'}
-        </button>
-        <button
-          type="button"
-          className="rounded-full border border-slate-300 px-5 py-3 text-sm font-semibold text-slate-700 hover:border-slate-400"
-          onClick={() => inputRef.current?.click()}
-        >
-          Browse
+          {buttonLabel}
         </button>
       </div>
+      {currentCount > maxPhotos && (
+        <div style={{ marginTop: '0.6rem', fontSize: '0.85rem', color: '#b91c1c', fontWeight: 600 }}>
+          <p style={{ margin: 0 }}>
+            Limit reached. Choose no more than 10 photos.
+          </p>
+        </div>
+      )}
       <input
         ref={inputRef}
         type="file"

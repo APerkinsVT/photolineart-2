@@ -88,116 +88,112 @@ export function PhotoItemCard({
   const timeline = (item.events ?? []).slice(-4);
 
   return (
-    <div className="rounded-2xl border border-slate-200 bg-white px-5 py-4 shadow-sm">
-      <div className="flex items-center justify-between gap-4">
+    <div
+      style={{
+        borderRadius: '14px',
+        border: '1px solid var(--color-border)',
+        background: '#fff',
+        padding: '1rem',
+        boxShadow: '0 8px 20px rgba(0,0,0,0.05)',
+      }}
+    >
+      <div style={{ display: 'flex', justifyContent: 'space-between', gap: '1rem', alignItems: 'center' }}>
         <div>
-          <p className="text-base font-semibold text-slate-900">{item.fileName}</p>
-          <p className="text-xs text-slate-500">
+          <p style={{ fontSize: '1rem', fontWeight: 700, color: 'var(--color-text-primary)' }}>{item.fileName}</p>
+          <p style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>
             {formatBytes(item.preparedSize)} • Updated {formatDateTime(item.lastUpdated)}
           </p>
         </div>
         <span
-          className="rounded-full border border-slate-200 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-500"
-          data-state={item.state}
+          style={{
+            borderRadius: '999px',
+            border: '1px solid var(--color-border)',
+            padding: '0.2rem 0.75rem',
+            fontSize: '0.75rem',
+            fontWeight: 700,
+            color: 'var(--color-text-secondary)',
+          }}
         >
           {status}
         </span>
       </div>
-      <div className="mt-3 h-2 w-full overflow-hidden rounded-full bg-slate-100">
+
+      <div style={{ marginTop: '0.75rem', height: '8px', width: '100%', background: '#e5e7eb', borderRadius: '999px' }}>
         <div
-          className="h-full rounded-full bg-brand transition-all"
-          style={{ width: `${item.progress}%` }}
+          style={{
+            height: '100%',
+            borderRadius: '999px',
+            background: 'var(--color-cta-primary)',
+            width: `${item.progress}%`,
+            transition: 'width 0.2s ease',
+          }}
         />
       </div>
-      <div className="mt-3 grid gap-2 text-xs text-slate-500 sm:grid-cols-3">
+
+      <div style={{ marginTop: '0.75rem', display: 'grid', gap: '0.5rem', gridTemplateColumns: 'repeat(auto-fit,minmax(140px,1fr))', fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>
         {stageRows.map((row) => (
-          <div key={row.key} className="rounded-xl border border-slate-100 bg-slate-50 px-3 py-2">
-            <p className="text-[11px] uppercase tracking-wide text-slate-400">{row.label}</p>
-            <p className="text-sm font-semibold text-slate-900">{formatDuration(row.start, row.end)}</p>
-            <p className="text-[11px] text-slate-400">
-              {row.end ? 'Complete' : row.start ? 'In progress' : 'Waiting'}
-            </p>
+          <div key={row.key} style={{ border: '1px solid var(--color-border)', borderRadius: '10px', padding: '0.5rem 0.65rem', background: '#f9fafb' }}>
+            <p style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#9ca3af' }}>{row.label}</p>
+            <p style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>{formatDuration(row.start, row.end)}</p>
+            <p style={{ fontSize: '0.75rem', color: '#9ca3af' }}>{row.end ? 'Complete' : row.start ? 'In progress' : 'Waiting'}</p>
           </div>
         ))}
       </div>
-      {item.state === 'processing' && !item.error && (
-        <p className="mt-2 text-sm text-slate-500">Sending to Replicate…</p>
-      )}
+
       {timeline.length > 0 && (
-        <div className="mt-3 rounded-2xl border border-slate-100 bg-white/70 p-3">
-          <p className="text-[11px] uppercase tracking-wide text-slate-400">Status feed</p>
-          <ol className="mt-2 space-y-1">
+        <div style={{ marginTop: '0.75rem', border: '1px solid var(--color-border)', borderRadius: '12px', padding: '0.6rem 0.8rem', background: '#f9fafb' }}>
+          <p style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#9ca3af' }}>Status feed</p>
+          <ol style={{ marginTop: '0.4rem', paddingLeft: '1rem' }}>
             {timeline.map((event) => (
-              <li key={event.id} className="text-xs text-slate-600">
-                <span className="font-mono text-[11px] text-slate-400">{formatEventTime(event.timestamp)}</span>
-                <span
-                  className={`ml-2 ${
-                    event.kind === 'error'
-                      ? 'text-rose-600'
-                      : event.kind === 'success'
-                      ? 'text-emerald-600'
-                      : 'text-slate-600'
-                  }`}
-                >
-                  {event.message}
-                </span>
+              <li key={event.id} style={{ fontSize: '0.85rem', color: event.kind === 'error' ? '#b91c1c' : event.kind === 'success' ? '#15803d' : 'var(--color-text-secondary)' }}>
+                <span style={{ fontFamily: 'monospace', fontSize: '0.75rem', color: '#9ca3af' }}>{formatEventTime(event.timestamp)}</span>
+                <span style={{ marginLeft: '0.4rem' }}>{event.message}</span>
               </li>
             ))}
           </ol>
         </div>
       )}
+
       {(item.previewUrl || item.lineArtUrl) && (
-        <div className="mt-4 grid gap-4 md:grid-cols-2">
+        <div style={{ marginTop: '0.9rem', display: 'grid', gap: '0.75rem', gridTemplateColumns: 'repeat(auto-fit,minmax(160px,1fr))' }}>
           {item.previewUrl && (
-            <div>
-              <p className="text-xs uppercase text-slate-400">Original preview</p>
-              <div className="mt-2 flex items-center justify-center rounded-xl border border-slate-200 bg-slate-50">
-                <img
-                  src={item.previewUrl}
-                  alt={`${item.fileName} original`}
-                  className="object-cover"
-                  style={{ width: '128px', height: '128px' }}
-                />
+            <div style={{ textAlign: 'center' }}>
+              <p style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#9ca3af' }}>Original</p>
+              <div style={{ marginTop: '0.4rem', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--color-border)', borderRadius: '10px', background: '#f9fafb' }}>
+                <img src={item.previewUrl} alt={`${item.fileName} original`} style={{ width: '140px', height: '140px', objectFit: 'cover', borderRadius: '8px' }} />
               </div>
             </div>
           )}
           {item.lineArtUrl && (
-            <div>
-              <p className="text-xs uppercase text-slate-400">Line art preview</p>
-              <div className="mt-2 flex items-center justify-center rounded-xl border border-slate-200 bg-white">
-                <img
-                  src={item.lineArtUrl}
-                  alt={`${item.fileName} line art`}
-                  className="object-contain"
-                  style={{ width: '160px', height: '160px' }}
-                />
+            <div style={{ textAlign: 'center' }}>
+              <p style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#9ca3af' }}>Line art</p>
+              <div style={{ marginTop: '0.4rem', display: 'flex', alignItems: 'center', justifyContent: 'center', border: '1px solid var(--color-border)', borderRadius: '10px', background: '#fff' }}>
+                <img src={item.lineArtUrl} alt={`${item.fileName} line art`} style={{ width: '160px', height: '160px', objectFit: 'contain' }} />
               </div>
             </div>
           )}
         </div>
       )}
+
       {item.analysis && (
-        <div className="mt-4 rounded-xl border border-slate-100 bg-slate-50/60 p-4">
-          <p className="text-xs uppercase text-slate-400">Color guide</p>
-          <ul className="mt-2 space-y-1 text-sm text-slate-600">
+        <div style={{ marginTop: '0.9rem', border: '1px solid var(--color-border)', borderRadius: '12px', padding: '0.75rem', background: '#f9fafb' }}>
+          <p style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '0.05em', color: '#9ca3af' }}>Color guide</p>
+          <ul style={{ marginTop: '0.4rem', paddingLeft: '1rem', color: 'var(--color-text-secondary)', fontSize: '0.9rem' }}>
             {item.analysis.palette.slice(0, 3).map((entry) => (
-              <li key={`${item.id}-${entry.fcNo}`} className="flex items-center gap-2">
-                <span
-                  className="inline-block h-4 w-4 rounded-full border"
-                  style={{ backgroundColor: entry.hex }}
-                />
+              <li key={`${item.id}-${entry.fcNo}`} style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>
+                <span style={{ display: 'inline-block', width: '14px', height: '14px', borderRadius: '50%', border: '1px solid #d1d5db', backgroundColor: entry.hex }} />
                 <span>{entry.fcName}</span>
               </li>
             ))}
             {item.analysis.palette.length === 0 && (
-              <li className="text-xs text-slate-400">Palette coming soon</li>
+              <li style={{ fontSize: '0.85rem', color: '#9ca3af' }}>Palette coming soon</li>
             )}
           </ul>
           {item.analysis.tips.length > 0 && (
-            <ul className="mt-3 space-y-1 text-xs text-slate-500">
+            <ul style={{ marginTop: '0.5rem', paddingLeft: '1rem', color: 'var(--color-text-secondary)', fontSize: '0.85rem' }}>
               {item.analysis.tips.slice(0, 2).map((tip) => (
                 <li key={`${item.id}-${tip.region}-${tip.fcNo}`}>
-                  <span className="font-semibold text-slate-600">{tip.region}:</span> {tip.tip}
+                  <span style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>{tip.region}:</span> {tip.tip}
                 </li>
               ))}
             </ul>
@@ -205,13 +201,15 @@ export function PhotoItemCard({
         </div>
       )}
 
-      {item.error && <p className="mt-2 text-sm text-rose-600">{item.error}</p>}
-      <div className="mt-4 flex flex-wrap gap-3">
+      {item.error && <p style={{ marginTop: '0.5rem', color: '#b91c1c' }}>{item.error}</p>}
+
+      <div style={{ marginTop: '0.75rem', display: 'flex', gap: '0.6rem', flexWrap: 'wrap' }}>
         {item.state === 'error' && (
           <button
             type="button"
-            className="rounded-full border border-brand px-4 py-1.5 text-sm font-medium text-brand hover:bg-brand hover:text-white"
+            className="btn-primary"
             onClick={() => onRetry(item.id)}
+            style={{ background: '#fff', color: 'var(--color-cta-primary)', border: '1px solid var(--color-cta-primary)' }}
           >
             Retry
           </button>
@@ -221,8 +219,16 @@ export function PhotoItemCard({
         )}
         <button
           type="button"
-          className="rounded-full border border-slate-200 px-4 py-1.5 text-sm font-medium text-slate-600 hover:border-slate-400"
           onClick={() => onRemove(item.id)}
+          style={{
+            borderRadius: '999px',
+            border: '1px solid var(--color-border)',
+            padding: '0.4rem 1rem',
+            fontWeight: 600,
+            color: 'var(--color-text-primary)',
+            background: '#fff',
+            cursor: 'pointer',
+          }}
         >
           Remove
         </button>
