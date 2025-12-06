@@ -493,6 +493,7 @@ export function LandingPage() {
                                 subject: 'Your PhotoLineArt coloring page',
                                 optIn: newsletterOptIn,
                                 rating: rating || undefined,
+                                source: 'single',
                               }),
                             });
                           } catch (mailErr) {

@@ -1,7 +1,37 @@
 import type { VercelRequest, VercelResponse } from '@vercel/node';
 import nodemailer from 'nodemailer';
 import { z } from 'zod';
-import { list, put } from '@vercel/blob';
+import fs from 'fs';
+import path from 'path';
+import { createClient } from '@supabase/supabase-js';
+
+// ---- Load .env.local manually ----
+(() => {
+  try {
+    const envPath = path.resolve(process.cwd(), '.env.local');
+    const content = fs.readFileSync(envPath, 'utf8');
+    content
+      .split(/\r?\n/)
+      .filter((line) => line.trim() && !line.startsWith('#'))
+      .forEach((line) => {
+        const m = line.match(/^\s*([^=#\s]+)\s*=\s*(.*)\s*$/);
+        if (!m) return;
+        const key = m[1];
+        let val = m[2];
+        if (
+          (val.startsWith('"') && val.endsWith('"')) ||
+          (val.startsWith("'") && val.endsWith("'"))
+        ) {
+          val = val.slice(1, -1);
+        }
+        if (!process.env[key]) {
+          process.env[key] = val;
+        }
+      });
+  } catch (err) {
+    // ignore if not present
+  }
+})();
 
 const bodySchema = z.object({
   to: z.string().email(),
@@ -11,6 +41,7 @@ const bodySchema = z.object({
   filename: z.string().default('photolineart.pdf'),
   optIn: z.boolean().optional().default(false),
   rating: z.number().int().min(1).max(5).optional(),
+  source: z.string().optional().default('single'),
 });
 
 function sendError(res: VercelResponse, status: number, message: string) {
@@ -23,45 +54,29 @@ function getRequiredEnv(name: string) {
   return val;
 }
 
-async function appendEmailLog(email: string, optIn: boolean, rating?: number) {
-  const token = process.env.BLOB_READ_WRITE_TOKEN;
-  if (!token) {
-    console.warn('Email log skipped: missing BLOB_READ_WRITE_TOKEN');
+// Supabase server client (service role) for logging
+const SUPABASE_URL = process.env.SUPABASE_URL;
+const SUPABASE_SERVICE_ROLE_KEY = process.env.SUPABASE_SERVICE_ROLE_KEY;
+const supabaseServer =
+  SUPABASE_URL && SUPABASE_SERVICE_ROLE_KEY
+    ? createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
+    : null;
+
+async function appendEmailLog(email: string, optIn: boolean, rating: number | undefined, source: string) {
+  if (!supabaseServer) {
+    console.warn('Supabase client missing; skip email log.');
     return;
   }
-
-  const logPath = 'logs/email-captures.csv';
-  let existing = '';
-
-  try {
-    const listings = await list({ token, prefix: logPath, limit: 1 });
-    const match = listings.blobs.find((b) => b.pathname === logPath);
-    if (match) {
-      const resp = await fetch(match.url);
-      if (resp.ok) {
-        existing = await resp.text();
-      }
-    }
-  } catch (err) {
-    console.warn('Unable to read existing email log (continuing):', err);
-  }
-
-  const line = `${new Date().toISOString()},${email},${optIn ? '1' : '0'},${rating ?? ''}\n`;
-  const hasHeader = existing.startsWith('timestamp,email');
-  const header = 'timestamp,email,opt_in,rating\n';
-  const body = existing ? `${existing.replace(/\s*$/, '')}\n${line}` : `${header}${line}`;
-  const next = hasHeader ? body : `${header}${line}`;
-
-  try {
-    await put(logPath, next, {
-      access: 'public',
-      addRandomSuffix: false,
-      token,
-      contentType: 'text/csv',
-    });
-    console.log('Email log appended to', logPath);
-  } catch (err) {
-    console.warn('Unable to write email log (continuing):', err);
+  const { error } = await supabaseServer.from('email_captures').insert({
+    email,
+    opt_in: !!optIn,
+    rating: typeof rating === 'number' ? rating : null,
+    source,
+  });
+  if (error) {
+    console.warn('Supabase email log insert failed (continuing):', error);
+  } else {
+    console.log('Email log appended to Supabase');
   }
 }
 
@@ -123,7 +138,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     await transporter.sendMail(mailOptions);
 
     try {
-      await appendEmailLog(parsed.to, parsed.optIn, parsed.rating);
+      await appendEmailLog(parsed.to, parsed.optIn, parsed.rating, parsed.source || 'single');
     } catch (err) {
       console.warn('Log append failed', err);
     }

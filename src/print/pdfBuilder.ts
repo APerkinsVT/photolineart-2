@@ -542,6 +542,18 @@ function formatTitle(fileName: string) {
 }
 
 export async function buildBundleBook(manifest: PortalManifest) {
+  await buildBundleBookCommon(manifest, 'save');
+}
+
+export async function buildBundleBookDataUrl(manifest: PortalManifest) {
+  const result = await buildBundleBookCommon(manifest, 'datauri');
+  if (!result) {
+    throw new Error('Failed to generate book PDF');
+  }
+  return result;
+}
+
+async function buildBundleBookCommon(manifest: PortalManifest, mode: 'save' | 'datauri') {
   await ensureFontsLoaded();
   const doc = new jsPDF({
     orientation: 'portrait',
@@ -572,7 +584,13 @@ export async function buildBundleBook(manifest: PortalManifest) {
   doc.addPage();
   renderBackCover(doc);
 
-  doc.save(`photolineart-book-${manifest.id}.pdf`);
+  const fileName = `photolineart-book-${manifest.id}.pdf`;
+  if (mode === 'save') {
+    doc.save(fileName);
+    return;
+  }
+  const dataUrl = doc.output('datauristring');
+  return { dataUrl, fileName };
 }
 
 function renderBookLineArtPage(doc: jsPDF, lineArtData: LoadedImage | null) {

@@ -1,10 +1,11 @@
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { BatchList } from '../components/BatchList';
 import { BatchSummary } from '../components/BatchSummary';
 import { UploadDropzone } from '../components/UploadDropzone';
 import { useBatchUploader } from '../state/useBatchUploader';
 import { DiagnosticsPanel } from '../components/DiagnosticsPanel';
 import { nanoid } from 'nanoid';
+import { buildBundleBookDataUrl } from '../services/pdfService';
 
 export function StudioPage() {
   const {
@@ -29,6 +30,10 @@ export function StudioPage() {
   const listRef = useRef<HTMLDivElement | null>(null);
   const [staged, setStaged] = useState<{ id: string; file: File; preview: string; selected: boolean }[]>([]);
   const selectedCount = staged.filter((s) => s.selected).length;
+  const [expectedCount, setExpectedCount] = useState(0);
+  const [bookEmail, setBookEmail] = useState('aperkinsvt@gmail.com');
+  const [bookSending, setBookSending] = useState(false);
+  const [bookSent, setBookSent] = useState(false);
 
   const handleAddFiles = async (files: FileList | File[]) => {
     const incoming = Array.from(files);
@@ -60,22 +65,96 @@ export function StudioPage() {
       setTimeout(() => setAlerts([]), 3000);
       return;
     }
+    setExpectedCount(selected.length);
     const files = selected.map((s) => s.file);
     const result = await addFiles(files);
     if (result.errors.length > 0) {
       setAlerts(result.errors);
       setTimeout(() => setAlerts([]), 5000);
     }
-    // remove those sent
+    // remove all staged after send to avoid confusion
     setStaged((prev) => {
-      prev.forEach((p) => {
-        if (selected.find((s) => s.id === p.id)) {
-          URL.revokeObjectURL(p.preview);
-        }
-      });
-      return prev.filter((p) => !selected.find((s) => s.id === p.id));
+      prev.forEach((p) => URL.revokeObjectURL(p.preview));
+      return [];
     });
   };
+
+  useEffect(() => {
+    if (expectedCount === 0) return;
+    if (stats.ready >= expectedCount && !isPublishing && !bundle) {
+      void publishBundle().catch((err) => {
+        console.error('Auto-publish failed', err);
+        setAlerts(['Book publish failed. Please try again.']);
+        setTimeout(() => setAlerts([]), 4000);
+      });
+    }
+  }, [expectedCount, stats.ready, isPublishing, bundle, publishBundle]);
+
+  useEffect(() => {
+    setBookSent(false);
+  }, [expectedCount]);
+
+  // Log a run to Supabase when a book is sent (best-effort)
+  const logRun = async (manifestUrl?: string, portalUrl?: string) => {
+    try {
+      await fetch('/api/log-run', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          source: 'book',
+          photos_count: expectedCount || undefined,
+          pages_count: undefined,
+          status: 'ready',
+          manifest_url: manifestUrl,
+          portal_url: portalUrl,
+          email: bookEmail || undefined,
+        }),
+      });
+    } catch (err) {
+      console.warn('Run log failed (continuing):', err);
+    }
+  };
+
+  const sendBookEmail = async () => {
+    if (!bundle?.manifestUrl || !bookEmail) {
+      setAlerts(['Book is not ready yet or email missing.']);
+      setTimeout(() => setAlerts([]), 3000);
+      return;
+    }
+    try {
+      setBookSending(true);
+      const resp = await fetch(bundle.manifestUrl);
+      if (!resp.ok) throw new Error('Unable to load book manifest');
+      const manifest = await resp.json();
+      const { dataUrl, fileName } = await buildBundleBookDataUrl(manifest);
+      await fetch('/api/send-pdf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: bookEmail,
+          pdfBase64: dataUrl,
+          filename: fileName,
+          subject: 'Your PhotoLineArt coloring book',
+          text: [
+            'Your book PDF is attached. You can also reopen it anytime via your private link:',
+            manifest.portalUrl,
+            '',
+            'We delete your uploads after processing.',
+          ].join('\n'),
+          source: 'book',
+        }),
+      });
+      void logRun(bundle.manifestUrl, manifest.portalUrl);
+      setBookSent(true);
+    } catch (err) {
+      console.error(err);
+      setAlerts(['Unable to email the book right now. Please try again.']);
+      setTimeout(() => setAlerts([]), 4000);
+    } finally {
+      setBookSending(false);
+    }
+  };
+
 
   return (
     <div className="page" style={{ paddingBottom: '4rem' }}>
@@ -94,6 +173,11 @@ export function StudioPage() {
                 Start my book
               </a>
             </div>
+            {expectedCount > 0 && (
+              <p className="hero-meta" style={{ marginTop: '0.35rem' }}>
+                Processing {expectedCount} photo(s)… we’ll email your book as soon as it’s ready.
+              </p>
+            )}
           </div>
         </div>
       </section>
@@ -285,54 +369,96 @@ export function StudioPage() {
               )}
 
               <BatchSummary {...stats} />
-              {portal?.portalUrl && (
-                <div
-                  style={{
-                    borderRadius: '12px',
-                    border: '1px solid var(--color-border)',
-                    background: '#f9fafb',
-                    padding: '0.85rem 1rem',
-                    color: 'var(--color-text-secondary)',
-                  }}
-                >
-                  Portal ready:{' '}
-                  <a href={portal.portalUrl} style={{ color: 'var(--color-cta-primary)', fontWeight: 600 }}>
-                    {portal.portalUrl}
-                  </a>
+
+              {expectedCount > 0 && !bundle && (
+                <div style={{ margin: '0.5rem 0', textAlign: 'center' }}>
+                  <p style={{ margin: 0, color: 'var(--color-text-secondary)', fontWeight: 600 }}>
+                    {isPublishing
+                      ? 'Preparing your one-of-a-kind personalized coloring book…'
+                      : 'Finishing up your book and getting it ready…'}
+                  </p>
+                  <div style={{ display: 'flex', justifyContent: 'center', gap: '0.35rem', marginTop: '0.4rem', color: 'var(--color-cta-primary)' }}>
+                    <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: 'currentColor', animation: 'bounce 1s infinite' }} />
+                    <span
+                      style={{
+                        width: '10px',
+                        height: '10px',
+                        borderRadius: '50%',
+                        background: 'currentColor',
+                        animation: 'bounce 1s infinite',
+                        animationDelay: '0.15s',
+                      }}
+                    />
+                    <span
+                      style={{
+                        width: '10px',
+                        height: '10px',
+                        borderRadius: '50%',
+                        background: 'currentColor',
+                        animation: 'bounce 1s infinite',
+                        animationDelay: '0.3s',
+                      }}
+                    />
+                  </div>
                 </div>
               )}
-              <div
-                style={{
-                  display: 'flex',
-                  flexDirection: 'column',
-                  gap: '0.75rem',
-                  alignItems: 'center',
-                  borderRadius: '12px',
-                  border: '1px solid var(--color-border)',
-                  background: '#f7f3ec',
-                  padding: '1rem',
-                }}
-              >
-                <button
-                  type="button"
-                  className="btn-primary"
-                  onClick={() => {
-                    void publishBundle();
+
+              {bundle && (
+                <div
+                  style={{
+                    border: '1px solid var(--color-border)',
+                    borderRadius: '12px',
+                    padding: '1rem',
+                    background: '#f7f3ec',
+                    display: 'grid',
+                    gap: '0.65rem',
                   }}
-                  disabled={stats.ready === 0 || isPublishing}
-                  style={{ minWidth: '200px', opacity: stats.ready === 0 || isPublishing ? 0.6 : 1 }}
                 >
-                  {bundle ? 'Published' : isPublishing ? 'Publishing…' : 'Publish bundle'}
-                </button>
-                {bundle && (
-                  <span style={{ fontSize: '0.9rem', color: 'var(--color-text-secondary)' }}>
-                    Manifest:{' '}
-                    <a href={bundle.manifestUrl} style={{ color: 'var(--color-cta-primary)', fontWeight: 600 }}>
-                      {bundle.portalUrl}
-                    </a>
-                  </span>
-                )}
-              </div>
+                  <div style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>Your coloring book is ready</div>
+                  <p style={{ margin: 0, color: 'var(--color-text-secondary)' }}>
+                    We’ll email you the book PDF plus a private link and QR so you can re-open or reprint anytime.
+                  </p>
+                  <label style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--color-text-primary)' }}>
+                    Email address
+                  </label>
+                  <input
+                    type="email"
+                    value={bookEmail}
+                    onChange={(e) => setBookEmail(e.target.value)}
+                    style={{
+                      border: '1px solid var(--color-border)',
+                      borderRadius: '10px',
+                      padding: '0.65rem 0.75rem',
+                      fontSize: '0.95rem',
+                    }}
+                    placeholder="you@example.com"
+                  />
+                  <button
+                    type="button"
+                    className="btn-primary"
+                    onClick={sendBookEmail}
+                    disabled={!bookEmail || bookSending}
+                    style={{ opacity: bookEmail && !bookSending ? 1 : 0.6 }}
+                  >
+                    {bookSending ? 'Sending…' : bookSent ? 'Sent!' : 'Email my book'}
+                  </button>
+                  {bookSending && (
+                    <p style={{ margin: 0, color: 'var(--color-text-secondary)', fontSize: '0.9rem' }}>
+                      Packaging your coloring book for email…
+                    </p>
+                  )}
+                  {bookSent && (
+                    <p style={{ margin: 0, color: 'var(--color-text-secondary)', fontSize: '0.9rem' }}>
+                      Sent! Check your inbox. Your private link is below.
+                    </p>
+                  )}
+                  {bundle.portalUrl && (
+                    <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--color-text-secondary)' }}>
+                      Private link: <a href={bundle.portalUrl} style={{ color: 'var(--color-cta-primary)', fontWeight: 600 }}>{bundle.portalUrl}</a>
+                    </p>
+                  )}
+                </div>
+              )}
             </div>
 
             <div style={{ marginTop: '1rem', borderRadius: '12px', border: '1px solid var(--color-border)', background: '#f9fafb', padding: '0.85rem 1rem' }}>

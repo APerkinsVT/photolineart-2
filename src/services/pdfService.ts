@@ -22,3 +22,8 @@ export async function downloadBundleBook(manifest: PortalManifest) {
   const { buildBundleBook } = await loadPdfBuilder();
   await buildBundleBook(manifest);
 }
+
+export async function buildBundleBookDataUrl(manifest: PortalManifest) {
+  const { buildBundleBookDataUrl } = await loadPdfBuilder();
+  return buildBundleBookDataUrl(manifest);
+}
