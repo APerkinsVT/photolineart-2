@@ -27,3 +27,8 @@ export async function buildBundleBookDataUrl(manifest: PortalManifest) {
   const { buildBundleBookDataUrl } = await loadPdfBuilder();
   return buildBundleBookDataUrl(manifest);
 }
+
+export async function buildBundleBookArrayBuffer(manifest: PortalManifest) {
+  const { buildBundleBookArrayBuffer } = await loadPdfBuilder();
+  return buildBundleBookArrayBuffer(manifest);
+}

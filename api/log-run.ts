@@ -42,13 +42,16 @@ const supabase =
 
 const bodySchema = z.object({
   source: z.string().default('book'),
+  pla_run_id: z.string().optional(),
   photos_count: z.number().int().optional(),
-  pages_count: z.number().int().optional(),
   status: z.string().default('ready'),
   manifest_url: z.string().url().optional(),
   portal_url: z.string().url().optional(),
   email: z.string().email().optional(),
+  retention_choice: z.string().optional(),
+  pdf_url: z.string().url().optional(),
   user_id: z.string().uuid().optional().nullable(),
+  pla_run_id: z.string().optional().nullable(),
 });
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {
@@ -65,21 +68,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const payload = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
     const parsed = bodySchema.parse(payload);
 
-    const { error } = await supabase.from('runs').insert({
+    const insertPayload = {
       source: parsed.source,
+      pla_run_id: parsed.pla_run_id ?? null,
       photos_count: parsed.photos_count ?? null,
-      pages_count: parsed.pages_count ?? null,
       status: parsed.status,
       manifest_url: parsed.manifest_url ?? null,
       portal_url: parsed.portal_url ?? null,
       user_id: parsed.user_id ?? null,
       email: parsed.email ?? null,
-    });
+      retention_choice: parsed.retention_choice ?? null,
+      pdf_url: parsed.pdf_url ?? null,
+    };
+    const { error } = await supabase.from('runs').insert(insertPayload);
 
     if (error) {
-      console.error('Supabase run log failed', error);
+      console.error('Supabase run log failed', error, insertPayload);
       return res.status(500).json({ error: 'Failed to log run' });
     }
+
+    console.log('Supabase run log ok', insertPayload);
 
     return res.status(200).json({ ok: true });
   } catch (err: any) {

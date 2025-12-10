@@ -35,4 +35,6 @@ export interface PortalManifest {
   portalUrl: string;
   qrPngUrl?: string;
   model: ManifestModel;
+  pdfUrl?: string;
+  retentionChoice?: string;
 }

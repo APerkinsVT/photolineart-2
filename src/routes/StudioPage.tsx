@@ -1,11 +1,17 @@
 import { useEffect, useRef, useState } from 'react';
-import { BatchList } from '../components/BatchList';
 import { BatchSummary } from '../components/BatchSummary';
 import { UploadDropzone } from '../components/UploadDropzone';
 import { useBatchUploader } from '../state/useBatchUploader';
-import { DiagnosticsPanel } from '../components/DiagnosticsPanel';
 import { nanoid } from 'nanoid';
 import { buildBundleBookDataUrl } from '../services/pdfService';
+
+function renameFileWithTitle(file: File, title?: string) {
+  const cleanTitle = (title ?? '').trim();
+  if (!cleanTitle) return file;
+  const extMatch = file.name.match(/\.([^.]+)$/);
+  const ext = extMatch ? `.${extMatch[1]}` : '';
+  return new File([file], `${cleanTitle}${ext}`, { type: file.type });
+}
 
 export function StudioPage() {
   const {
@@ -28,12 +34,17 @@ export function StudioPage() {
   const [showDiagnostics, setShowDiagnostics] = useState(false);
   const creatorRef = useRef<HTMLDivElement | null>(null);
   const listRef = useRef<HTMLDivElement | null>(null);
-  const [staged, setStaged] = useState<{ id: string; file: File; preview: string; selected: boolean }[]>([]);
+  const [staged, setStaged] = useState<
+    { id: string; file: File; preview: string; selected: boolean; title: string }
+  >([]);
   const selectedCount = staged.filter((s) => s.selected).length;
   const [expectedCount, setExpectedCount] = useState(0);
   const [bookEmail, setBookEmail] = useState('aperkinsvt@gmail.com');
   const [bookSending, setBookSending] = useState(false);
+  const [sendStatus, setSendStatus] = useState<string>('');
   const [bookSent, setBookSent] = useState(false);
+  const [retentionChoice, setRetentionChoice] = useState<string>('');
+  const [pdfUrl, setPdfUrl] = useState<string | undefined>(undefined);
 
   const handleAddFiles = async (files: FileList | File[]) => {
     const incoming = Array.from(files);
@@ -45,6 +56,7 @@ export function StudioPage() {
       file,
       preview: URL.createObjectURL(file),
       selected: selectedCount + index < maxCount,
+      title: '', // user-editable; fallback to file.name when unused
     }));
 
     if (next.length > 0) {
@@ -58,6 +70,12 @@ export function StudioPage() {
     );
   };
 
+  const updateTitle = (id: string, value: string) => {
+    setStaged((prev) =>
+      prev.map((item) => (item.id === id ? { ...item, title: value } : item)),
+    );
+  };
+
   const startProcessing = async () => {
     const selected = staged.filter((s) => s.selected);
     if (selected.length === 0) {
@@ -66,7 +84,8 @@ export function StudioPage() {
       return;
     }
     setExpectedCount(selected.length);
-    const files = selected.map((s) => s.file);
+    setRetentionChoice('');
+    const files = selected.map((s) => renameFileWithTitle(s.file, s.title));
     const result = await addFiles(files);
     if (result.errors.length > 0) {
       setAlerts(result.errors);
@@ -95,38 +114,107 @@ export function StudioPage() {
   }, [expectedCount]);
 
   // Log a run to Supabase when a book is sent (best-effort)
-  const logRun = async (manifestUrl?: string, portalUrl?: string) => {
+  const logRun = async (
+    manifestUrl?: string,
+    portalUrl?: string,
+    photosCountOverride?: number,
+    retention?: string,
+    pdfUrl?: string,
+    runId?: string,
+  ) => {
     try {
-      await fetch('/api/log-run', {
+      const payload = {
+        source: 'book',
+        pla_run_id: runId ?? undefined,
+        photos_count: photosCountOverride ?? expectedCount ?? undefined,
+        status: 'ready',
+        manifest_url: manifestUrl,
+        portal_url: portalUrl,
+        email: bookEmail || undefined,
+        retention_choice: retention || undefined,
+        pdf_url: pdfUrl || undefined,
+      };
+      const resp = await fetch('/api/log-run', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          source: 'book',
-          photos_count: expectedCount || undefined,
-          pages_count: undefined,
-          status: 'ready',
-          manifest_url: manifestUrl,
-          portal_url: portalUrl,
-          email: bookEmail || undefined,
-        }),
+        body: JSON.stringify(payload),
       });
+      if (!resp.ok) {
+        const text = await resp.text();
+        console.warn('log-run failed', resp.status, text);
+      } else {
+        console.log('log-run ok', payload);
+      }
     } catch (err) {
       console.warn('Run log failed (continuing):', err);
     }
   };
 
   const sendBookEmail = async () => {
-    if (!bundle?.manifestUrl || !bookEmail) {
-      setAlerts(['Book is not ready yet or email missing.']);
+    if (!bundle?.manifestUrl || !bookEmail || !retentionChoice) {
+      setAlerts(['Book is not ready yet, email missing, or file handling choice not selected.']);
       setTimeout(() => setAlerts([]), 3000);
       return;
     }
     try {
       setBookSending(true);
+      setSendStatus(
+        retentionChoice === 'keep_30_days'
+          ? 'Sending your book and saving files for 30 days…'
+          : 'Sending your book and deleting files…',
+      );
       const resp = await fetch(bundle.manifestUrl);
       if (!resp.ok) throw new Error('Unable to load book manifest');
       const manifest = await resp.json();
+      const photosCount =
+        (Array.isArray(manifest?.pages) && manifest.pages.length) ||
+        (Array.isArray(manifest?.items) && manifest.items.length) ||
+        (Array.isArray(manifest?.artifacts) && manifest.artifacts.length) ||
+        expectedCount ||
+        undefined;
+      const runId = bundle?.id || manifest.id || `book-${Date.now()}`;
+      const proxyUrl = `${window.location.origin}/api/download?run_id=${encodeURIComponent(runId)}${
+        bookEmail ? `&email=${encodeURIComponent(bookEmail)}` : ''
+      }&manifest_url=${encodeURIComponent(bundle.manifestUrl)}`;
+
+      // Set the manifest link/QR before we render the PDF
+      if (retentionChoice === 'keep_30_days') {
+        manifest.portalUrl = proxyUrl;
+        manifest.qrPngUrl = undefined;
+      } else {
+        // For delete-after-send, point people back to the landing page with a QR/text link.
+        manifest.portalUrl = window.location.origin;
+        manifest.qrPngUrl = undefined as any;
+      }
+
       const { dataUrl, fileName } = await buildBundleBookDataUrl(manifest);
+
+      let uploadUrl: string | undefined;
+      if (retentionChoice === 'keep_30_days') {
+        try {
+          const path = `bundles/${runId}.pdf`;
+          console.log('Uploading book PDF', { runId, path, size: dataUrl.length });
+          const uploadResp = await fetch('/api/upload-pdf', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              path,
+              dataUrl,
+            }),
+          });
+          if (!uploadResp.ok) {
+            const text = await uploadResp.text();
+            throw new Error(`Upload failed: ${uploadResp.status} ${text}`);
+          }
+          const uploadJson = await uploadResp.json();
+          uploadUrl = uploadJson.url as string;
+          console.log('PDF uploaded', uploadUrl);
+        } catch (err) {
+          console.error('PDF upload failed (continuing without stored PDF):', err);
+        }
+      }
+
+      const finalUrl = retentionChoice === 'keep_30_days' ? proxyUrl : undefined;
       await fetch('/api/send-pdf', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -136,15 +224,23 @@ export function StudioPage() {
           filename: fileName,
           subject: 'Your PhotoLineArt coloring book',
           text: [
-            'Your book PDF is attached. You can also reopen it anytime via your private link:',
-            manifest.portalUrl,
+            'Your book PDF is attached.',
+            retentionChoice === 'keep_30_days'
+              ? finalUrl
+                ? `You can also download it anytime for 30 days: ${finalUrl}`
+                : 'We are retaining your files for 30 days in case you need a resend.'
+              : `We delete your uploads after sending. Upload and print another: ${window.location.origin}`,
             '',
-            'We delete your uploads after processing.',
+            'Print & bind tips:',
+            '- Paper: 80–100 lb cover (120–160 gsm) to avoid bleed-through.',
+            '- Printing: double-sided saves bulk; borderless optional.',
+            '- Binding: coil/comb or 3-hole punch; add a thicker cover if you like.',
           ].join('\n'),
           source: 'book',
         }),
       });
-      void logRun(bundle.manifestUrl, manifest.portalUrl);
+      void logRun(bundle.manifestUrl, finalUrl, photosCount, retentionChoice, uploadUrl, runId);
+      setPdfUrl(uploadUrl);
       setBookSent(true);
     } catch (err) {
       console.error(err);
@@ -152,6 +248,7 @@ export function StudioPage() {
       setTimeout(() => setAlerts([]), 4000);
     } finally {
       setBookSending(false);
+      setSendStatus('');
     }
   };
 
@@ -269,12 +366,44 @@ export function StudioPage() {
             )}
 
             <div style={{ display: 'grid', gap: '1.25rem', marginTop: '1.25rem' }}>
-              <UploadDropzone
-                onFilesSelected={handleAddFiles}
-                currentCount={selectedCount}
-              />
+              <div
+                style={{
+                  border: '1px dashed var(--color-border)',
+                  borderRadius: '12px',
+                  padding: '0.85rem',
+                  background: '#fff',
+                  display: 'grid',
+                  gap: '0.5rem',
+                }}
+              >
+                <label style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--color-text-primary)' }}>
+                  Email to receive your finished book
+                </label>
+                <input
+                  type="email"
+                  value={bookEmail}
+                  onChange={(e) => setBookEmail(e.target.value)}
+                  placeholder="you@example.com"
+                  style={{
+                    border: '1px solid var(--color-border)',
+                    borderRadius: '10px',
+                    padding: '0.65rem 0.75rem',
+                    fontSize: '0.95rem',
+                  }}
+                />
+                <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>
+                  We’ll email the PDF as soon as it’s ready.
+                </p>
+              </div>
 
-              {staged.length > 0 && (
+              {expectedCount === 0 && (
+                <UploadDropzone
+                  onFilesSelected={handleAddFiles}
+                  currentCount={selectedCount}
+                />
+              )}
+
+              {expectedCount === 0 && staged.length > 0 && (
                 <div
                   style={{
                     border: '1px solid var(--color-border)',
@@ -295,15 +424,20 @@ export function StudioPage() {
                       gap: '0.4rem',
                     }}
                   >
-                    <span>
-                      {selectedCount} selected • {staged.length} staged
-                    </span>
+                    <div style={{ display: 'flex', flexDirection: 'column', gap: '0.2rem' }}>
+                      <span>
+                        {selectedCount} selected • {staged.length} staged
+                      </span>
+                      <span style={{ fontSize: '0.85rem' }}>
+                        Edit each photo title as you want it to appear in the book (filenames stay unchanged).
+                      </span>
+                    </div>
                   </div>
                   <div
                     style={{
                       display: 'grid',
                       gap: '0.75rem',
-                      gridTemplateColumns: 'repeat(auto-fit, minmax(120px, 1fr))',
+                      gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))',
                     }}
                   >
                     {staged.map((item) => (
@@ -313,9 +447,10 @@ export function StudioPage() {
                           border: '1px solid var(--color-border)',
                           borderRadius: '10px',
                           padding: '0.4rem',
-                          textAlign: 'center',
                           background: '#fff',
                           position: 'relative',
+                          display: 'grid',
+                          gap: '0.35rem',
                         }}
                       >
                         <div style={{ width: '100%', paddingTop: '100%', position: 'relative', overflow: 'hidden', borderRadius: '8px', background: '#f9fafb' }}>
@@ -332,10 +467,21 @@ export function StudioPage() {
                             }}
                           />
                         </div>
-                        <div style={{ marginTop: '0.35rem', fontSize: '0.8rem', color: 'var(--color-text-secondary)', minHeight: '2.2em' }}>
-                          {item.file.name}
-                        </div>
-                        <div style={{ marginTop: '0.3rem', display: 'flex', justifyContent: 'center' }}>
+                        <input
+                          type="text"
+                          value={item.title}
+                          onChange={(e) => updateTitle(item.id, e.target.value)}
+                          placeholder={item.file.name}
+                          style={{
+                            width: '100%',
+                            border: '1px solid var(--color-border)',
+                            borderRadius: '8px',
+                            padding: '0.4rem 0.5rem',
+                            fontSize: '0.85rem',
+                            color: item.title ? 'var(--color-text-primary)' : '#9ca3af',
+                          }}
+                        />
+                        <div style={{ display: 'flex', justifyContent: 'center' }}>
                           <input
                             type="checkbox"
                             checked={item.selected}
@@ -354,17 +500,19 @@ export function StudioPage() {
                       </span>
                     )}
                   </div>
-                  <div style={{ marginTop: '0.5rem', display: 'flex', justifyContent: 'center' }}>
-                    <button
-                      type="button"
-                      className="btn-primary"
-                      onClick={startProcessing}
-                      disabled={selectedCount === 0 || selectedCount > 10}
-                      style={{ opacity: selectedCount === 0 || selectedCount > 10 ? 0.6 : 1 }}
-                    >
-                      Start processing ({selectedCount} selected)
-                    </button>
-                  </div>
+                  {expectedCount === 0 && (
+                    <div style={{ marginTop: '0.5rem', display: 'flex', justifyContent: 'center' }}>
+                      <button
+                        type="button"
+                        className="btn-primary"
+                        onClick={startProcessing}
+                        disabled={selectedCount === 0 || selectedCount > 10 || !bookEmail}
+                        style={{ opacity: selectedCount === 0 || selectedCount > 10 || !bookEmail ? 0.6 : 1 }}
+                      >
+                        Start processing ({selectedCount} selected)
+                      </button>
+                    </div>
+                  )}
                 </div>
               )}
 
@@ -376,6 +524,9 @@ export function StudioPage() {
                     {isPublishing
                       ? 'Preparing your one-of-a-kind personalized coloring book…'
                       : 'Finishing up your book and getting it ready…'}
+                  </p>
+                  <p style={{ margin: '0.35rem 0 0 0', color: 'var(--color-text-secondary)', fontSize: '0.9rem' }}>
+                    We’ll email it to {bookEmail || 'your email'} in about 8–10 minutes.
                   </p>
                   <div style={{ display: 'flex', justifyContent: 'center', gap: '0.35rem', marginTop: '0.4rem', color: 'var(--color-cta-primary)' }}>
                     <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: 'currentColor', animation: 'bounce 1s infinite' }} />
@@ -416,7 +567,7 @@ export function StudioPage() {
                 >
                   <div style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>Your coloring book is ready</div>
                   <p style={{ margin: 0, color: 'var(--color-text-secondary)' }}>
-                    We’ll email you the book PDF plus a private link and QR so you can re-open or reprint anytime.
+                    We’ll email you the book PDF. Save it so you can reprint anytime.
                   </p>
                   <label style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--color-text-primary)' }}>
                     Email address
@@ -433,68 +584,64 @@ export function StudioPage() {
                     }}
                     placeholder="you@example.com"
                   />
-                  <button
-                    type="button"
-                    className="btn-primary"
-                    onClick={sendBookEmail}
-                    disabled={!bookEmail || bookSending}
-                    style={{ opacity: bookEmail && !bookSending ? 1 : 0.6 }}
-                  >
-                    {bookSending ? 'Sending…' : bookSent ? 'Sent!' : 'Email my book'}
-                  </button>
+                  <div style={{ display: 'grid', gap: '0.35rem' }}>
+                    <label style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--color-text-primary)' }}>
+                      File handling after send (required)
+                    </label>
+                    <select
+                      value={retentionChoice}
+                      onChange={(e) => setRetentionChoice(e.target.value)}
+                      disabled={bookSending || bookSent}
+                      style={{
+                        border: '1px solid var(--color-border)',
+                        borderRadius: '10px',
+                        padding: '0.55rem 0.65rem',
+                        fontSize: '0.95rem',
+                      }}
+                    >
+                      <option value="">Choose an option</option>
+                      <option value="delete_after_send">Delete my photos and book after sending</option>
+                      <option value="keep_30_days">Keep my files for 30 days (for resend requests)</option>
+                    </select>
+                  </div>
+                  {!bookSent && (
+                    <button
+                      type="button"
+                      className="btn-primary"
+                      onClick={sendBookEmail}
+                      disabled={!bookEmail || !retentionChoice || bookSending}
+                      style={{ opacity: bookEmail && retentionChoice && !bookSending ? 1 : 0.6 }}
+                    >
+                      {bookSending ? 'Sending…' : 'Email my book'}
+                    </button>
+                  )}
                   {bookSending && (
                     <p style={{ margin: 0, color: 'var(--color-text-secondary)', fontSize: '0.9rem' }}>
-                      Packaging your coloring book for email…
+                      {sendStatus || 'Packaging your coloring book for email…'}
                     </p>
                   )}
                   {bookSent && (
-                    <p style={{ margin: 0, color: 'var(--color-text-secondary)', fontSize: '0.9rem' }}>
-                      Sent! Check your inbox. Your private link is below.
-                    </p>
-                  )}
-                  {bundle.portalUrl && (
-                    <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--color-text-secondary)' }}>
-                      Private link: <a href={bundle.portalUrl} style={{ color: 'var(--color-cta-primary)', fontWeight: 600 }}>{bundle.portalUrl}</a>
+                    <p style={{ margin: 0, color: 'var(--color-text-secondary)', fontSize: '0.9rem', fontWeight: 700 }}>
+                      PDF sent and cleanup complete. Check your email.
                     </p>
                   )}
                 </div>
-              )}
-            </div>
-
-            <div style={{ marginTop: '1rem', borderRadius: '12px', border: '1px solid var(--color-border)', background: '#f9fafb', padding: '0.85rem 1rem' }}>
-              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: '0.5rem' }}>
-                <p style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--color-text-primary)' }}>Studio diagnostics</p>
-                <button
-                  type="button"
-                  onClick={() => setShowDiagnostics((prev) => !prev)}
-                  style={{ fontSize: '0.8rem', fontWeight: 700, color: 'var(--color-cta-primary)', background: 'none', border: 'none', cursor: 'pointer' }}
-                >
-                  {showDiagnostics ? 'Hide' : 'Show'} details
-                </button>
-              </div>
-              {showDiagnostics ? (
-                <div style={{ marginTop: '0.5rem' }}>
-                  <DiagnosticsPanel summary={diagnostics} />
-                </div>
-              ) : (
-                <p style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>
-                  Live timing + publish stats (internal only) are available when you need them.
-                </p>
               )}
             </div>
           </div>
         </div>
       </section>
 
-      <section className="section section--white" style={{ paddingTop: 0 }}>
-        <div className="container" style={{ maxWidth: '900px' }} ref={listRef}>
-          <BatchList
-            items={items}
-            onRetry={retryUpload}
-            onRemove={removeItem}
-            portalUrl={portal?.portalUrl}
-            qrPngUrl={portal?.qrPngUrl}
-          />
+      <section className="section section--tint">
+        <div className="container" style={{ maxWidth: '900px' }}>
+          <h3 className="section-heading" style={{ marginBottom: '0.75rem' }}>Print &amp; bind tips</h3>
+          <ul style={{ margin: 0, paddingLeft: '1.25rem', color: 'var(--color-text-secondary)', lineHeight: 1.6, fontSize: '0.95rem' }}>
+            <li style={{ marginBottom: '0.45rem' }}>Paper: 80–100 lb cover (120–160 gsm) feels premium and prevents bleed-through.</li>
+            <li style={{ marginBottom: '0.45rem' }}>Printing: double-sided saves bulk; consider borderless for full-page art.</li>
+            <li style={{ marginBottom: '0.45rem' }}>Binding: coil/comb binding or 3-hole punch works well; add a thicker cover if you like.</li>
+            <li style={{ marginBottom: '0.45rem' }}>Home printing: check “actual size” and high-quality mode; use a fresh black cartridge for clean lines.</li>
+            <li>Print shops: send the PDF as-is; ask for heavier stock and a light laminate cover if desired.</li>
+          </ul>
         </div>
       </section>
     </div>

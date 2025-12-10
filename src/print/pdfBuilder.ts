@@ -347,29 +347,57 @@ async function renderReferenceSpread(doc: jsPDF, item: PortalManifest['items'][n
   });
 }
 
-function renderPortalSummaryPage(doc: jsPDF, manifest: PortalManifest) {
+async function renderPortalSummaryPage(doc: jsPDF, manifest: PortalManifest) {
+  if (!manifest.portalUrl) {
+    return;
+  }
   const pageConfig = PAGE.portrait;
   const margins = getPageMargins(pageConfig, doc.getNumberOfPages() || 1);
   setHeadingFont(doc);
   doc.setFontSize(FONTS.heading);
-  doc.text('To visit your portal, scan the QR code below:', pageConfig.width / 2, margins.top + 10, {
+  doc.text('Download your book anytime:', pageConfig.width / 2, margins.top + 10, {
     align: 'center',
   });
-  if (manifest.qrPngUrl) {
-    const size = 25.4; // 1 inch
-    const centerX = pageConfig.width / 2;
-    const centerY = pageConfig.height / 2;
-    doc.addImage(
-      manifest.qrPngUrl,
-      'PNG',
-      centerX - size / 2,
-      centerY - size / 2,
-      size,
-      size,
-    );
+  const centerX = pageConfig.width / 2;
+  const centerY = pageConfig.height / 2;
+  const linkLabel = 'Click to download';
+  const drawLinkOnly = () => {
     setBodyFont(doc);
     doc.setFontSize(FONTS.body);
-    doc.text(manifest.portalUrl, centerX, centerY + size / 2 + 8, { align: 'center' });
+    doc.textWithLink(linkLabel, centerX, centerY, {
+      align: 'center',
+      url: manifest.portalUrl,
+    });
+  };
+  const drawQr = (dataUrl: string) => {
+    const size = 25.4; // 1 inch
+    doc.addImage(dataUrl, 'PNG', centerX - size / 2, centerY - size / 2, size, size);
+    setBodyFont(doc);
+    doc.setFontSize(FONTS.body);
+    doc.textWithLink(linkLabel, centerX, centerY + size / 2 + 8, {
+      align: 'center',
+      url: manifest.portalUrl,
+    });
+  };
+
+  if (manifest.qrPngUrl) {
+    try {
+      drawQr(manifest.qrPngUrl);
+      return;
+    } catch {
+      // fall back to generating or text-only
+    }
+  }
+
+  try {
+    const qr = await fetchImageAsDataUrl(
+      `https://api.qrserver.com/v1/create-qr-code/?size=300x300&data=${encodeURIComponent(
+        manifest.portalUrl,
+      )}`,
+    );
+    drawQr(qr.dataUrl);
+  } catch {
+    drawLinkOnly();
   }
 }
 
@@ -553,7 +581,15 @@ export async function buildBundleBookDataUrl(manifest: PortalManifest) {
   return result;
 }
 
-async function buildBundleBookCommon(manifest: PortalManifest, mode: 'save' | 'datauri') {
+export async function buildBundleBookArrayBuffer(manifest: PortalManifest) {
+  const result = await buildBundleBookCommon(manifest, 'arraybuffer');
+  if (!result) {
+    throw new Error('Failed to generate book PDF');
+  }
+  return result;
+}
+
+async function buildBundleBookCommon(manifest: PortalManifest, mode: 'save' | 'datauri' | 'arraybuffer') {
   await ensureFontsLoaded();
   const doc = new jsPDF({
     orientation: 'portrait',
@@ -577,8 +613,10 @@ async function buildBundleBookCommon(manifest: PortalManifest, mode: 'save' | 'd
     renderBookLineArtPage(doc, lineArtData);
   }
 
-  doc.addPage();
-  renderPortalSummaryPage(doc, manifest);
+  if (manifest.portalUrl) {
+    doc.addPage();
+    await renderPortalSummaryPage(doc, manifest);
+  }
   doc.addPage();
   renderInsideBackCoverPage(doc);
   doc.addPage();
@@ -589,8 +627,15 @@ async function buildBundleBookCommon(manifest: PortalManifest, mode: 'save' | 'd
     doc.save(fileName);
     return;
   }
-  const dataUrl = doc.output('datauristring');
-  return { dataUrl, fileName };
+  if (mode === 'datauri') {
+    const dataUrl = doc.output('datauristring');
+    return { dataUrl, fileName };
+  }
+  if (mode === 'arraybuffer') {
+    const buf = doc.output('arraybuffer');
+    return { arrayBuffer: buf, fileName };
+  }
+  return null;
 }
 
 function renderBookLineArtPage(doc: jsPDF, lineArtData: LoadedImage | null) {

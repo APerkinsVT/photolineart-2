@@ -44,6 +44,7 @@ export interface BundleCreatePayload {
   qrPngUrl?: string;
   items: ManifestUpdatePayload['items'];
   model?: { name: string; version: string };
+  copyAssets?: boolean;
 }
 
 export async function createBundle(payload: BundleCreatePayload) {
@@ -61,3 +62,4 @@ export async function fetchBundleManifest(id: string) {
   }
   return response.json();
 }
+
