@@ -51,7 +51,6 @@ const bodySchema = z.object({
   retention_choice: z.string().optional(),
   pdf_url: z.string().url().optional(),
   user_id: z.string().uuid().optional().nullable(),
-  pla_run_id: z.string().optional().nullable(),
 });
 
 export default async function handler(req: VercelRequest, res: VercelResponse) {

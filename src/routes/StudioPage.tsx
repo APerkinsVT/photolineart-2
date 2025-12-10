@@ -15,12 +15,8 @@ function renameFileWithTitle(file: File, title?: string) {
 
 export function StudioPage() {
   const {
-    items,
     addFiles,
-    retryUpload,
-    removeItem,
     stats,
-    portal,
     bundle,
     isPublishing,
     publishBundle,
@@ -28,15 +24,11 @@ export function StudioPage() {
     clearError,
     setSize,
     setSetSize,
-    diagnostics,
   } = useBatchUploader();
   const [alerts, setAlerts] = useState<string[]>([]);
-  const [showDiagnostics, setShowDiagnostics] = useState(false);
   const creatorRef = useRef<HTMLDivElement | null>(null);
-  const listRef = useRef<HTMLDivElement | null>(null);
-  const [staged, setStaged] = useState<
-    { id: string; file: File; preview: string; selected: boolean; title: string }
-  >([]);
+  type StagedItem = { id: string; file: File; preview: string; selected: boolean; title: string };
+  const [staged, setStaged] = useState<StagedItem[]>([]);
   const selectedCount = staged.filter((s) => s.selected).length;
   const [expectedCount, setExpectedCount] = useState(0);
   const [bookEmail, setBookEmail] = useState('aperkinsvt@gmail.com');
@@ -44,7 +36,6 @@ export function StudioPage() {
   const [sendStatus, setSendStatus] = useState<string>('');
   const [bookSent, setBookSent] = useState(false);
   const [retentionChoice, setRetentionChoice] = useState<string>('');
-  const [pdfUrl, setPdfUrl] = useState<string | undefined>(undefined);
 
   const handleAddFiles = async (files: FileList | File[]) => {
     const incoming = Array.from(files);
@@ -187,7 +178,10 @@ export function StudioPage() {
         manifest.qrPngUrl = undefined as any;
       }
 
-      const { dataUrl, fileName } = await buildBundleBookDataUrl(manifest);
+      const { dataUrl, fileName } = (await buildBundleBookDataUrl(manifest)) as {
+        dataUrl: string;
+        fileName: string;
+      };
 
       let uploadUrl: string | undefined;
       if (retentionChoice === 'keep_30_days') {
@@ -240,7 +234,6 @@ export function StudioPage() {
         }),
       });
       void logRun(bundle.manifestUrl, finalUrl, photosCount, retentionChoice, uploadUrl, runId);
-      setPdfUrl(uploadUrl);
       setBookSent(true);
     } catch (err) {
       console.error(err);

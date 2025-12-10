@@ -3,7 +3,6 @@ import { BatchList } from '../components/BatchList';
 import { BatchSummary } from '../components/BatchSummary';
 import { UploadDropzone } from '../components/UploadDropzone';
 import { useBatchUploader } from '../state/useBatchUploader';
-import { DiagnosticsPanel } from '../components/DiagnosticsPanel';
 import { HeroSection } from '../components/HeroSection';
 import { HowItWorksSection } from '../components/HowItWorksSection';
 
@@ -22,10 +21,8 @@ export function UploadPage() {
     clearError,
     setSize,
     setSetSize,
-    diagnostics,
   } = useBatchUploader();
   const [alerts, setAlerts] = useState<string[]>([]);
-  const [showDiagnostics, setShowDiagnostics] = useState(false);
   const creatorRef = useRef<HTMLDivElement | null>(null);
 
   const handleAddFiles = async (files: FileList | File[]) => {
@@ -127,24 +124,6 @@ export function UploadPage() {
           </div>
         </div>
 
-        <div className="space-y-3 rounded-2xl border border-slate-100 bg-slate-50/70 p-4">
-          <div className="flex flex-wrap items-center justify-between gap-2">
-            <p className="text-sm font-semibold text-slate-700">Studio diagnostics</p>
-            <button
-              type="button"
-              className="text-xs font-semibold uppercase tracking-wide text-brand"
-              onClick={() => setShowDiagnostics((prev) => !prev)}
-            >
-              {showDiagnostics ? 'Hide' : 'Show'} details
-            </button>
-          </div>
-          {showDiagnostics && <DiagnosticsPanel summary={diagnostics} />}
-          {!showDiagnostics && (
-            <p className="text-xs text-slate-500">
-              Live timing + publish stats (internal only) are available when you need them.
-            </p>
-          )}
-        </div>
       </div>
 
       <div className="mx-auto max-w-3xl">
