@@ -16,7 +16,10 @@ export async function uploadPublicBlob(
 
   if (!token) throw new Error('Missing VITE_BLOB_READ_WRITE_TOKEN');
 
-  const res = await put(path, data as any, {
+  const arrayBuffer =
+    data instanceof Uint8Array ? new Uint8Array(data).buffer : new Uint8Array(data).buffer;
+  const blob = new Blob([arrayBuffer], { type: contentType });
+  const res = await put(path, blob, {
     access: 'public',
     contentType,
     token,

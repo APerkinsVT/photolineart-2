@@ -51,18 +51,18 @@ export function StudioPage() {
     }));
 
     if (next.length > 0) {
-      setStaged((prev) => [...prev, ...next]);
+      setStaged((prev: StagedItem[]): StagedItem[] => [...prev, ...next]);
     }
   };
 
   const toggleStaged = (id: string) => {
-    setStaged((prev) =>
+    setStaged((prev: StagedItem[]): StagedItem[] =>
       prev.map((item) => (item.id === id ? { ...item, selected: !item.selected } : item)),
     );
   };
 
   const updateTitle = (id: string, value: string) => {
-    setStaged((prev) =>
+    setStaged((prev: StagedItem[]): StagedItem[] =>
       prev.map((item) => (item.id === id ? { ...item, title: value } : item)),
     );
   };
@@ -83,7 +83,7 @@ export function StudioPage() {
       setTimeout(() => setAlerts([]), 5000);
     }
     // remove all staged after send to avoid confusion
-    setStaged((prev) => {
+    setStaged((prev: StagedItem[]): StagedItem[] => {
       prev.forEach((p) => URL.revokeObjectURL(p.preview));
       return [];
     });
