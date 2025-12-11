@@ -89,8 +89,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     console.log('Supabase run log ok', insertPayload);
 
     return res.status(200).json({ ok: true });
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : 'Bad request';
     console.error('log-run error', err);
-    return res.status(400).json({ error: err?.message ?? 'Bad request' });
+    return res.status(400).json({ error: message });
   }
 }

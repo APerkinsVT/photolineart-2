@@ -10,9 +10,12 @@ export async function uploadPublicBlob(
   contentType: string,
 ) {
   const token =
-    (import.meta as any).env?.VITE_BLOB_READ_WRITE_TOKEN ||
+    (import.meta as unknown as { env?: { VITE_BLOB_READ_WRITE_TOKEN?: string } }).env
+      ?.VITE_BLOB_READ_WRITE_TOKEN ||
     // fallback for SSR/dev in case process.env is injected
-    (typeof process !== 'undefined' ? (process.env as any).VITE_BLOB_READ_WRITE_TOKEN : undefined);
+    (typeof process !== 'undefined'
+      ? (process.env as Record<string, string | undefined>).VITE_BLOB_READ_WRITE_TOKEN
+      : undefined);
 
   if (!token) throw new Error('Missing VITE_BLOB_READ_WRITE_TOKEN');
 

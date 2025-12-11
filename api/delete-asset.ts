@@ -42,7 +42,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   try {
     await Promise.all(paths.map((pathname) => del(pathname, { token })));
     return res.status(200).json({ ok: true });
-  } catch (err: any) {
+  } catch (err: unknown) {
     console.error('delete-asset error', err);
     return sendError(res, 500, 'Failed to delete assets');
   }

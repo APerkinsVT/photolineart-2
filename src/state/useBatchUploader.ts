@@ -534,7 +534,13 @@ export function useBatchUploader() {
             notifyError(message);
             tipEnhancementFailures = partialFailures.length;
           }
-          enhancedItems = result.items.map(({ enhancementError, ...item }) => item);
+          enhancedItems = result.items.map((item) => {
+            const rest = { ...item } as Omit<typeof item, 'enhancementError'> & {
+              enhancementError?: unknown;
+            };
+            delete rest.enhancementError;
+            return rest;
+          });
         }
       } catch (error) {
         console.warn('Tip enhancement failed', error);

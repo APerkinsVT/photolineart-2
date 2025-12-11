@@ -16,7 +16,7 @@ type FCPaletteEntry = {
   swatchFilename: string;
 };
 let fcPaletteCache: Record<string, FCPaletteEntry> | null = null;
-let fontCache: Record<string, string> = {};
+const fontCache: Record<string, string> = {};
 let fontsLoaded = false;
 const fontsToLoad: Array<{ url: string; name: string; weight: 'normal' | 'bold' }> = [
   { url: '/fonts/Playfair_Display/static/PlayfairDisplay-Regular.ttf', name: 'Playfair', weight: 'normal' },
@@ -195,17 +195,21 @@ async function renderInfoPage(
   doc.text(params.fileName, pageConfig.width / 2, cursorY, { align: 'center' });
   cursorY += 5;
 
-  if (params.referenceData) {
+  const referenceData = params.referenceData
+    ? await downscaleLoadedImage(params.referenceData, 2200, 0.8)
+    : null;
+
+  if (referenceData) {
     const isLandscape = pageConfig.width > pageConfig.height;
     const maxWidth = Math.min(pageWidth, 95) * (isLandscape ? 0.6 : 0.8); // shrink more on landscape
     const { width, height } = fitInsideBox(
-      params.referenceData.width,
-      params.referenceData.height,
+      referenceData.width,
+      referenceData.height,
       maxWidth,
       70,
     );
     const offsetX = marginConfig.left + (pageWidth - width) / 2;
-    doc.addImage(params.referenceData.dataUrl, 'JPEG', offsetX, cursorY, width, height);
+    doc.addImage(referenceData.dataUrl, 'JPEG', offsetX, cursorY, width, height);
     cursorY += height + 8;
   } else {
     setBodyFont(doc);
@@ -424,7 +428,7 @@ function renderTipBlock(
   const firstLineArr = doc.splitTextToSize(tip.tip, firstLineWidth);
   const firstLine = firstLineArr.shift() ?? '';
   doc.text(firstLine, margin + regionWidth, cursorY);
-  let remainingText = tip.tip.slice(firstLine.length).trimStart();
+  const remainingText = tip.tip.slice(firstLine.length).trimStart();
   if (remainingText.length > 0) {
     const remainingWrapped = doc.splitTextToSize(remainingText, wrapWidth);
     doc.text(remainingWrapped, margin, cursorY + lineHeight);
@@ -667,5 +671,37 @@ function getPageMargins(pageConfig: (typeof PAGE)[Orientation], pageNumber: numb
     right: isOddPage ? pageConfig.outerMargin : pageConfig.innerMargin,
     top: pageConfig.topMargin,
     bottom: pageConfig.bottomMargin,
+  };
+}
+
+async function downscaleLoadedImage(
+  img: LoadedImage,
+  maxDimension = 2200,
+  quality = 0.8,
+): Promise<LoadedImage> {
+  const maxSide = Math.max(img.width, img.height);
+  if (maxSide <= maxDimension) return img;
+
+  const scale = maxDimension / maxSide;
+  const targetW = Math.round(img.width * scale);
+  const targetH = Math.round(img.height * scale);
+  const canvas = document.createElement('canvas');
+  canvas.width = targetW;
+  canvas.height = targetH;
+  const ctx = canvas.getContext('2d');
+  if (!ctx) return img;
+  const imageEl = new Image();
+  const dataUrl = img.dataUrl.startsWith('data:') ? img.dataUrl : `data:image/jpeg;base64,${img.dataUrl}`;
+  await new Promise<void>((resolve, reject) => {
+    imageEl.onload = () => resolve();
+    imageEl.onerror = reject;
+    imageEl.src = dataUrl;
+  });
+  ctx.drawImage(imageEl, 0, 0, targetW, targetH);
+  const resizedDataUrl = canvas.toDataURL('image/jpeg', quality);
+  return {
+    dataUrl: resizedDataUrl,
+    width: targetW,
+    height: targetH,
   };
 }

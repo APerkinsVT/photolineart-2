@@ -201,10 +201,10 @@ export function LandingPage() {
       setEmail('');
       setPhoto(null);
       setCustomTitle('');
-    } catch (error: any) {
+    } catch (error: unknown) {
       console.error('Generation failed:', error);
       let msg = 'Something went wrong. Please try again.';
-      if (error.message?.includes('502') || error.message?.includes('Failed to fetch')) {
+      if (error instanceof Error && (error.message.includes('502') || error.message.includes('Failed to fetch'))) {
         msg = 'Backend server unreachable. Please ensure the API server is running (port 3001).';
       }
       setFeedback({
@@ -410,8 +410,9 @@ export function LandingPage() {
                           type="button"
                           onClick={() => {
                             setRating(star);
-                            if (typeof window !== 'undefined' && (window as any).gtag) {
-                              (window as any).gtag('event', 'rating_submit', {
+                            const win = window as { gtag?: (event: string, action: string, params: Record<string, unknown>) => void };
+                            if (typeof window !== 'undefined' && win.gtag) {
+                              win.gtag('event', 'rating_submit', {
                                 event_category: 'feedback',
                                 event_label: 'lineart_rating',
                                 value: star,

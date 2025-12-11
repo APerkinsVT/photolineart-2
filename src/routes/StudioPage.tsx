@@ -175,13 +175,16 @@ export function StudioPage() {
       } else {
         // For delete-after-send, point people back to the landing page with a QR/text link.
         manifest.portalUrl = window.location.origin;
-        manifest.qrPngUrl = undefined as any;
+        manifest.qrPngUrl = undefined;
       }
 
       const { dataUrl, fileName } = (await buildBundleBookDataUrl(manifest)) as {
         dataUrl: string;
         fileName: string;
       };
+      const pdfSizeBytes = Math.round((dataUrl.length * 3) / 4);
+      const attachThreshold = 5 * 1024 * 1024; // 5 MB
+      const allowAttachment = pdfSizeBytes <= attachThreshold;
 
       let uploadUrl: string | undefined;
       if (retentionChoice === 'keep_30_days') {
@@ -214,7 +217,7 @@ export function StudioPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           to: bookEmail,
-          pdfBase64: dataUrl,
+          pdfBase64: allowAttachment ? dataUrl : undefined,
           filename: fileName,
           subject: 'Your PhotoLineArt coloring book',
           text: [

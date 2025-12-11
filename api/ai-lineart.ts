@@ -429,7 +429,7 @@ async function fetchWithRetry(
   retries = 1,
   delayMs = 500,
 ): Promise<Response> {
-  let lastError: any;
+  let lastError: unknown;
   for (let attempt = 0; attempt <= retries; attempt++) {
     try {
       const res = await fn();

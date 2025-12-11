@@ -1,8 +1,7 @@
 import { put } from '@vercel/blob/client';
 import { postJson } from './apiClient';
 import type { BlobUploadRequestBody, BlobUploadResponse } from '../types/api';
-
-export interface UploadTarget extends BlobUploadResponse {}
+type UploadTarget = BlobUploadResponse;
 
 export async function requestUploadTarget(body: BlobUploadRequestBody) {
   return postJson<BlobUploadResponse>('/api/blob-upload', body);

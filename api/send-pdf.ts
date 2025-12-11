@@ -28,7 +28,7 @@ import { createClient } from '@supabase/supabase-js';
           process.env[key] = val;
         }
       });
-  } catch (err) {
+  } catch {
     // ignore if not present
   }
 })();
@@ -37,7 +37,7 @@ const bodySchema = z.object({
   to: z.string().email(),
   subject: z.string().default('Your PhotoLineArt coloring page'),
   text: z.string().optional(),
-  pdfBase64: z.string(), // base64 string (may include data: prefix)
+  pdfBase64: z.string().optional(), // base64 string (may include data: prefix)
   filename: z.string().default('photolineart.pdf'),
   optIn: z.boolean().optional().default(false),
   rating: z.number().int().min(1).max(5).optional(),
@@ -97,9 +97,11 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const smtpFrom = getRequiredEnv('SMTP_FROM');
 
     // Normalize base64 (strip data URL prefix if present)
-    const base64 = parsed.pdfBase64.includes(',')
-      ? parsed.pdfBase64.split(',')[1] ?? parsed.pdfBase64
-      : parsed.pdfBase64;
+    const base64 = parsed.pdfBase64
+      ? parsed.pdfBase64.includes(',')
+        ? parsed.pdfBase64.split(',')[1] ?? parsed.pdfBase64
+        : parsed.pdfBase64
+      : null;
 
     const transporter = nodemailer.createTransport({
       host: smtpHost,
@@ -126,13 +128,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
           '',
           'Thanks for trying PhotoLineArt!',
         ].join('\n'),
-      attachments: [
-        {
-          filename: parsed.filename,
-          content: Buffer.from(base64, 'base64'),
-          contentType: 'application/pdf',
-        },
-      ],
+      attachments: base64
+        ? [
+            {
+              filename: parsed.filename,
+              content: Buffer.from(base64, 'base64'),
+              contentType: 'application/pdf',
+            },
+          ]
+        : [],
     };
 
     await transporter.sendMail(mailOptions);
@@ -144,9 +148,9 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     }
 
     return res.status(200).json({ ok: true });
-  } catch (err: any) {
+  } catch (err: unknown) {
+    const msg = err instanceof Error ? err.message : 'Unexpected error';
     console.error('send-pdf error', err);
-    const msg = err?.message ?? 'Unexpected error';
     return sendError(res, 400, msg);
   }
 }
