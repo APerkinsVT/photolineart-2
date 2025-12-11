@@ -254,6 +254,20 @@ export function LandingPage() {
               life, on paper. First page is free.
             </p>
 
+            <div style={{ display: 'flex', justifyContent: 'center', margin: '18px auto 20px' }}>
+              <img
+                src="/images/dory-photo-lineart.png"
+                alt="Example photo and line art"
+                style={{
+                  maxWidth: '520px',
+                  width: '100%',
+                  borderRadius: '14px',
+                  boxShadow: '0 18px 35px rgba(0,0,0,0.08)',
+                  margin: '0 auto',
+                }}
+              />
+            </div>
+
             <ul className="hero-bullets">
               <li>
                 <strong>Transform</strong> real moments—family, pets, travel—into pages you’ll actually want
@@ -843,11 +857,27 @@ export function LandingPage() {
       {/* Book teaser */}
       <section className="section section--white">
         <div className="container" style={{ textAlign: 'center', maxWidth: '860px' }}>
-          <p className="section-heading" style={{ marginBottom: '0.35rem' }}>
-            Build a full coloring book from many photos
-          </p>
+          <h2 className="section-heading">Build a full coloring book from your favorite photos</h2>
+          <div
+            style={{
+              width: '100%',
+              maxWidth: '640px',
+              margin: '0 auto 1rem auto',
+              border: '1px dashed var(--color-text-secondary)',
+              borderRadius: '12px',
+              background: 'var(--color-base)',
+              minHeight: '260px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'var(--color-text-secondary)',
+              fontWeight: 600,
+            }}
+          >
+            Book preview image placeholder
+          </div>
           <p className="problem-subtitle" style={{ marginBottom: '1rem' }}>
-            Upload up to 10 photos → get a printable book, portal link, and QR for gifting.
+            Upload up to 10 photos → get a printable book, ready for binding and holiday gifting.
           </p>
           <div
             style={{
@@ -859,11 +889,11 @@ export function LandingPage() {
               fontSize: '0.95rem',
             }}
           >
-            <span>Auto-published with a portal link and a QR so you can return anytime.</span>
+            <span>Auto-published with a link and a QR so you can re-download anytime.</span>
             <span>Pages follow your upload order—no extra steps required.</span>
           </div>
           <a href="/studio" className="btn-primary">
-            Build my coloring book
+            Start my coloring book now
           </a>
         </div>
       </section>
