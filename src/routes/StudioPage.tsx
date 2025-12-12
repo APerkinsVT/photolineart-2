@@ -31,11 +31,25 @@ export function StudioPage() {
   const [staged, setStaged] = useState<StagedItem[]>([]);
   const selectedCount = staged.filter((s) => s.selected).length;
   const [expectedCount, setExpectedCount] = useState(0);
-  const [bookEmail, setBookEmail] = useState('aperkinsvt@gmail.com');
+  const [bookEmail, setBookEmail] = useState('');
   const [bookSending, setBookSending] = useState(false);
   const [sendStatus, setSendStatus] = useState<string>('');
   const [bookSent, setBookSent] = useState(false);
   const [retentionChoice, setRetentionChoice] = useState<string>('');
+  const [openStudioFaq, setOpenStudioFaq] = useState<number | null>(null);
+
+  // GA page view for Studio
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const gtag = (window as any).gtag;
+    if (!gtag) return;
+    gtag('event', 'page_view', {
+      page_title: 'Studio',
+      page_path: window.location.pathname,
+      page_location: window.location.href,
+      send_to: 'G-3FFZS9JDZT',
+    });
+  }, []);
 
   const handleAddFiles = async (files: FileList | File[]) => {
     const incoming = Array.from(files);
@@ -229,9 +243,10 @@ export function StudioPage() {
               : `We delete your uploads after sending. Upload and print another: ${window.location.origin}`,
             '',
             'Print & bind tips:',
-            '- Paper: 80–100 lb cover (120–160 gsm) to avoid bleed-through.',
-            '- Printing: double-sided saves bulk; borderless optional.',
-            '- Binding: coil/comb or 3-hole punch; add a thicker cover if you like.',
+            '- Paper: use 80–100 lb paper to avoid bleed-through and give your pencils a premium feel.',
+            '- Printing: double-sided keeps the layout with line art on the right; consider borderless for full page art.',
+            '- Binding: use a coil/comb or 3-hole punch; add a thick cover if you like.',
+            '- Home printing: check “actual size” and high-quality mode; use a fresh black cartridge for clean lines.',
           ].join('\n'),
           source: 'book',
         }),
@@ -257,9 +272,9 @@ export function StudioPage() {
             <p className="problem-subtitle" style={{ textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.05em' }}>
               Creator Console
             </p>
-            <h1 className="hero-heading">Build a coloring book from many photos</h1>
+            <h1 className="hero-heading">Build a custom coloring book using your own photos</h1>
             <p className="hero-lead">
-              Upload up to 10 photos, get clean line art + palettes, and auto-publish a printable book with a portal link and QR for gifting.
+              Upload up to 10 photos. We’ll turn them into high‑fidelity line art and personalized color guides, then auto‑publish a beautiful PDF coloring book that's ready to print or share.
             </p>
             <div className="hero-cta">
               <a href="#studio-console" className="btn-primary" onClick={() => creatorRef.current?.scrollIntoView({ behavior: 'smooth' })}>
@@ -294,10 +309,10 @@ export function StudioPage() {
                 Upload and publish automatically
               </h2>
               <p style={{ maxWidth: '640px', margin: '0 auto', color: 'var(--color-text-secondary)', lineHeight: 1.6 }}>
-                Drag-and-drop multiple photos, watch their status, and we’ll publish a portal + printable book automatically. Pages follow your upload order—no extra steps required.
+                Drag-and-drop multiple photos. After processing, we’ll send your print-ready book automatically. You can even re-title the photos for the page header.
               </p>
               <div style={{ marginTop: '1rem' }}>
-                <label style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--color-text-primary)' }}>Available Faber-Castell set</label>
+                <label style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--color-text-primary)' }}>Select your Faber‑Castell Polychromos set below:</label>
                 <div style={{ marginTop: '0.5rem', display: 'flex', gap: '0.75rem', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap' }}>
                   <select
                     value={setSize}
@@ -315,10 +330,11 @@ export function StudioPage() {
                       </option>
                     ))}
                   </select>
-                  <p style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>
-                    Palettes + tips will respect the selected Polychromos set.
-                  </p>
+
                 </div>
+              <p style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>
+                Color palettes match the selected pencil set + expert tips are generated for your exact photos.
+              </p>              
               </div>
             </div>
 
@@ -373,13 +389,13 @@ export function StudioPage() {
                 }}
               >
                 <label style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--color-text-primary)' }}>
-                  Email to receive your finished book
+                  Enter your email to receive your finished book
                 </label>
                 <input
                   type="email"
                   value={bookEmail}
                   onChange={(e) => setBookEmail(e.target.value)}
-                  placeholder="you@example.com"
+                  placeholder="you@email.com"
                   style={{
                     border: '1px solid var(--color-border)',
                     borderRadius: '10px',
@@ -388,7 +404,7 @@ export function StudioPage() {
                   }}
                 />
                 <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>
-                  We’ll email the PDF as soon as it’s ready.
+                  We’ll email the finished PDF. You can choose to delete your photos and PDF right away or save them for 30 days.
                 </p>
               </div>
 
@@ -578,7 +594,7 @@ export function StudioPage() {
                       padding: '0.65rem 0.75rem',
                       fontSize: '0.95rem',
                     }}
-                    placeholder="you@example.com"
+                    placeholder="you@email.com"
                   />
                   <div style={{ display: 'grid', gap: '0.35rem' }}>
                     <label style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--color-text-primary)' }}>
@@ -628,16 +644,111 @@ export function StudioPage() {
         </div>
       </section>
 
-      <section className="section section--tint">
+      <section className="section section--white">
         <div className="container" style={{ maxWidth: '900px' }}>
-          <h3 className="section-heading" style={{ marginBottom: '0.75rem' }}>Print &amp; bind tips</h3>
+          <h2 className="section-heading">Expert coloring tips from professionals</h2>
+          <h3 className="final-subtitle" style={{ marginBottom: '1.25rem' }}>
+            You’ll get advice from top-level illustrators for working with colored pencils in general—plus photo-specific color building tips.
+          </h3>
+          <div style={{ display: 'flex', justifyContent: 'center' }}>
+            <img
+              src="/images/generic-tips.png"
+              alt="Example of expert coloring tips"
+              style={{ maxWidth: '720px', width: '100%', borderRadius: '16px', boxShadow: '0 18px 35px rgba(0,0,0,0.08)' }}
+            />
+          </div>
+        </div>
+      </section>
+
+      <section className="section section--white">
+        <div className="container" style={{ maxWidth: '900px' }}>
+          <h2 className="section-heading">Coloring book FAQs</h2>
+          <h3 className="faq-subtitle">Quick answers for multi-photo books.</h3>
+          <div className="faq-list">
+            {[
+              {
+                q: 'Can I rearrange photos after upload?',
+                a: 'Uploads are processed in the order you add them. If you need a new order, re-upload in the sequence you want.',
+              },
+              {
+                q: 'Why would I want to add titles to my photos?',
+                a: "The default title for each 'palette and tips' page comes from the photo's filename, which is often something obscure like “img3970.png.” Adding a title makes the book feel intentional and descriptive.",
+              },
+              {
+                q: 'How big can my book be?',
+                a: 'Up to 10 photos per book. Each photo becomes a line art page with a paired tips page.',
+              },
+              {
+                q: 'Will you keep my files?',
+                a: 'You choose. Either delete after send or keep for 30 days so you can re-download.',
+              },
+              {
+                q: 'What paper should I use?',
+                a: '80–100 lb paper works great. Print double-sided to keep line art on the right-hand page.',
+              },
+            ].map((item, idx) => (
+              <div key={item.q} className="faq-item">
+                <button
+                  className="faq-question"
+                  onClick={() => setOpenStudioFaq(openStudioFaq === idx ? null : idx)}
+                  aria-expanded={openStudioFaq === idx}
+                  aria-controls={`studio-faq-${idx}`}
+                >
+                  {item.q}
+                  <span style={{ marginLeft: 'auto', fontWeight: 700 }}>{openStudioFaq === idx ? '−' : '+'}</span>
+                </button>
+                {openStudioFaq === idx && (
+                  <p id={`studio-faq-${idx}`} className="faq-answer">
+                    {item.a}
+                  </p>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      <section className="section section--tint">
+        <div className="container" style={{ maxWidth: '900px' }} id="print-tips">
+          <h2 className="section-heading" style={{ marginBottom: '0.75rem' }}>Print &amp; bind tips</h2>
+          <h3 className="final-subtitle">Your book is delivered as a PDF. Here’s how to make it look professional at home or at a print shop.</h3>
           <ul style={{ margin: 0, paddingLeft: '1.25rem', color: 'var(--color-text-secondary)', lineHeight: 1.6, fontSize: '0.95rem' }}>
-            <li style={{ marginBottom: '0.45rem' }}>Paper: 80–100 lb cover (120–160 gsm) feels premium and prevents bleed-through.</li>
-            <li style={{ marginBottom: '0.45rem' }}>Printing: double-sided saves bulk; consider borderless for full-page art.</li>
-            <li style={{ marginBottom: '0.45rem' }}>Binding: coil/comb binding or 3-hole punch works well; add a thicker cover if you like.</li>
+            <li style={{ marginBottom: '0.45rem' }}>Paper: use 80–100 lb paper to avoid bleed-through and give your pencils a premium feel.</li>
+            <li style={{ marginBottom: '0.45rem' }}>Printing: double-sided keeps the layout with line art on the right; consider borderless for full page art.</li>
+            <li style={{ marginBottom: '0.45rem' }}>Binding: use a coil/comb or 3-hole punch; add a thick cover if you like.</li>
             <li style={{ marginBottom: '0.45rem' }}>Home printing: check “actual size” and high-quality mode; use a fresh black cartridge for clean lines.</li>
-            <li>Print shops: send the PDF as-is; ask for heavier stock and a light laminate cover if desired.</li>
+            <li style={{ marginBottom: '0.45rem' }}>Print shops: send the PDF as-is; ask for heavier stock and a light laminate cover if desired.</li>
           </ul>
+        </div>
+      </section>
+
+      <section className="section section--final">
+        <div className="container final-heading">
+          <h2 className="section-heading">Digital photos can pile up out of sight. Turn yours into something you can hold.</h2>
+          <h3 className="final-subtitle">Take your memories off the screen and onto your table tonight.</h3>
+
+          <div className="final-grid">
+            <div className="final-grid-item">
+              <p className="final-grid-item-title">Personal</p>
+              <p>Built from your own photos, not stock images.</p>
+            </div>
+            <div className="final-grid-item">
+              <p className="final-grid-item-title">Thoughtful</p>
+              <p>Designed for colored pencils, quiet time, and real focus.</p>
+            </div>
+            <div className="final-grid-item">
+              <p className="final-grid-item-title">Fast</p>
+              <p>Up to 10 pages in minutes, ready to print and color.</p>
+            </div>
+          </div>
+          <div className="hero-cta">
+            <a href="#studio-console" className="btn-primary" onClick={() => creatorRef.current?.scrollIntoView({ behavior: 'smooth' })}>
+              Start my book
+            </a>
+            <p className="inline-cta-meta">
+              If you’re done coloring generic designs, start with photos that still make you feel something.
+            </p>
+          </div>
         </div>
       </section>
     </div>

@@ -57,10 +57,10 @@ export function UploadDropzone({ onFilesSelected, currentCount = 0 }: UploadDrop
       onDrop={onDrop}
     >
       <p style={{ fontSize: '1.35rem', fontWeight: 700, color: 'var(--color-text-primary)', marginBottom: '0.25rem' }}>
-        Drop your photos
+        Drop your photos here
       </p>
       <p style={{ fontSize: '0.95rem', color: 'var(--color-text-secondary)' }}>
-        JPG, PNG, or WebP • up to 3MB per image • 12MB per batch • Max 10 photos
+        Drag and drop up to 10 JPG/PNG/WebP images (≤3 MB each) or click to choose files.
       </p>
       <div style={{ marginTop: '0.9rem', display: 'flex', gap: '0.6rem', flexWrap: 'wrap', justifyContent: 'center' }}>
         <button

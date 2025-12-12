@@ -46,6 +46,7 @@ export function LandingPage() {
   const [feedback, setFeedback] = useState<FeedbackState>({ message: '', type: '' });
   const [result, setResult] = useState<LineArtResponse | null>(null);
   const [status, setStatus] = useState<StatusState>('idle');
+  const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
   const statusTimers = useRef<number[]>([]);
 
   const fcPaletteMap = useMemo(() => {
@@ -235,9 +236,12 @@ export function LandingPage() {
             <a className="site-nav-link" href="#examples">
               Examples
             </a>
-            <a className="site-nav-link site-nav-login" href="#login">
-              Login
+            <a className="site-nav-link" href="/about">
+              About
             </a>
+            {/* <a className="site-nav-link site-nav-login" href="#login">
+              Login
+            </a> */}
           </nav>
         </div>
       </header>
@@ -246,12 +250,15 @@ export function LandingPage() {
       <section className="section section--base">
         <div className="container hero">
           <div className="hero-inner">
-            <h1 className="hero-heading">Turn your photo into a coloring page you’ll keep forever.</h1>
+            <h1 className="hero-heading">Upload a favorite photo and get a high‑fidelity coloring book page.</h1>
 
             <p className="hero-lead">
-              In minutes, our AI turns a favorite photo into high-fidelity line art,{' '}
-              <strong>complete with specific Faber-Castell color tips.</strong> Not generic patterns. Your
-              life, on paper. First page is free.
+              In minutes, our app turns a favorite photo into high-resolution line art,{' '}
+              complete with specific <strong>Faber-Castell color numbers</strong> and expert tips. Not generic patterns. Your
+              cherished moments, on paper.
+            </p>
+            <p className="hero-lead">
+              First page is <strong>FREE</strong> - no card needed.
             </p>
 
             <div style={{ display: 'flex', justifyContent: 'center', margin: '18px auto 20px' }}>
@@ -271,7 +278,7 @@ export function LandingPage() {
             <ul className="hero-bullets">
               <li>
                 <strong>Transform</strong> real moments—family, pets, travel—into pages you’ll actually want
-                to color.
+                to color. Travelers, hobbyists, pet owners, and parents can re-live their memories in this artistic activity.
               </li>
               <li>Get specific pencil guidance matched to your exact photo and Faber-Castell set.</li>
               <li>Download a print-ready PDF and start coloring tonight.</li>
@@ -279,7 +286,7 @@ export function LandingPage() {
 
             <div className="hero-cta">
               <a href="#hero-form" className="btn-primary">
-                Turn my photo into a free page
+                Create my free colouring page
               </a>
             </div>
 
@@ -467,7 +474,7 @@ export function LandingPage() {
                       type="email"
                       value={email}
                       onChange={(e) => setEmail(e.target.value)}
-                      placeholder="you@example.com"
+                      placeholder="you@email.com"
                       style={{
                         width: '100%',
                         borderRadius: '0.6rem',
@@ -681,7 +688,7 @@ export function LandingPage() {
                         background: photo ? '#17494e' : undefined,
                       }}
                     >
-                      {isLoading ? 'Processing...' : photo ? 'Get my line art' : 'Turn my photo into a free page'}
+                      {isLoading ? 'Processing...' : photo ? 'Get my line art' : 'Create my free colouring page'}
                     </button>
                   </div>
                 </form>
@@ -693,7 +700,7 @@ export function LandingPage() {
                   Got feedback?{' '}
                   <a
                     href="mailto:team@photolineart.com?subject=PhotoLineArt%20feedback"
-                    style={{ color: 'var(--color-cta-primary)', fontWeight: 700 }}
+                    style={{ color: 'var(--color-cta-primary)', fontWeight: 600 }}
                   >
                     Tell us here
                   </a>
@@ -825,7 +832,7 @@ export function LandingPage() {
           <h3 className="problem-subtitle">They calm your hands. Not your heart.</h3>
 
           <p className="problem-intro">
-            You buy a beautiful “adult coloring book,” sit down to relax… and it’s page after page of random mandalas,
+            You buy an “adult coloring book,” and sit down to relax… but it’s page after page of random mandalas,
             forests, and quotes that mean nothing to you. You color a few, feel oddly flat, and the book disappears into a
             drawer.
           </p>
@@ -874,7 +881,16 @@ export function LandingPage() {
               fontWeight: 600,
             }}
           >
-            Book preview image placeholder
+          <img
+                src="/images/coloring-book-sample.jpg"
+                alt="Example coloring book pages"
+                style={{
+                  maxWidth: '520px',
+                  width: '100%',
+                  borderRadius: '14px',
+                  boxShadow: '0 18px 35px rgba(0,0,0,0.08)',
+                  margin: '0 auto',
+                }}></img>
           </div>
           <p className="problem-subtitle" style={{ marginBottom: '1rem' }}>
             Upload up to 10 photos → get a printable book, ready for binding and holiday gifting.
@@ -893,7 +909,7 @@ export function LandingPage() {
             <span>Pages follow your upload order—no extra steps required.</span>
           </div>
           <a href="/studio" className="btn-primary">
-            Start my coloring book now
+            Learn about multi-page coloring books now
           </a>
         </div>
       </section>
@@ -962,7 +978,7 @@ export function LandingPage() {
 
           <div className="inline-cta">
             <a href="#hero-form" className="btn-primary">
-              Show me my photo as line art
+              Create my free colouring page
             </a>
             <p className="inline-cta-meta">Free trial: download one full-resolution page + expert tips, no credit card.</p>
           </div>
@@ -984,55 +1000,6 @@ export function LandingPage() {
               <p className="core-benefit-title">Gift-ready in an afternoon</p>
               <p className="core-benefit-text">Print, bind, and wrap a book that is uniquely yours.</p>
             </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Social proof */}
-      <section id="examples" className="section section--white">
-        <div className="container social-proof-heading">
-          <h2 className="section-heading">What people are coloring with PhotoLineArt</h2>
-          <h3 className="social-proof-subtitle">Real photos. Real pages. Real rituals.</h3>
-
-          <div className="testimonials">
-            <blockquote className="testimonial">
-              <p>
-                “In one evening I turned a folder of old family photos into six pages my sister and I now color together on video calls. It feels like visiting our
-                childhood.”
-              </p>
-              <footer>— Elena K., 52, Seattle</footer>
-            </blockquote>
-            <blockquote className="testimonial">
-              <p>
-                “I made a small book from our honeymoon pictures. We color one page every Sunday. It’s our reset button.”
-              </p>
-              <footer>— Marcus L., 38, Chicago</footer>
-            </blockquote>
-            <blockquote className="testimonial">
-              <p>
-                “I’m not an artist, but the Faber-Castell tips told me exactly which pencils to use. The pages look grown-up, not cutesy. It lives on my coffee table,
-                not in a box.”
-              </p>
-              <footer>— Priya S., 47, Boston</footer>
-            </blockquote>
-          </div>
-
-          <div className="stats">
-            <div className="stats-inner">
-              <p className="stat">
-                <span>1000's</span> of pages created
-              </p>
-              <p className="stat">
-                <span>9/10</span> trial users color a page
-              </p>
-            </div>
-          </div>
-
-          <div className="inline-cta">
-            <a href="#hero-form" className="btn-primary">
-              Create my free coloring page
-            </a>
-            <p className="inline-cta-meta">Start with one photo that still makes you pause.</p>
           </div>
         </div>
       </section>
@@ -1079,6 +1046,54 @@ export function LandingPage() {
         </div>
       </section>
 
+      {/* Social proof */}
+      <section id="examples" className="section section--white">
+        <div className="container social-proof-heading">
+          <h2 className="section-heading">What people are coloring with PhotoLineArt</h2>
+          <h3 className="social-proof-subtitle">Real photos. Real pages. Real rituals.</h3>
+
+          <div className="testimonials">
+            <blockquote className="testimonial">
+              <p>
+                “In one evening I turned family photos into pages my sister and I color together on zoom. It's like visiting our
+                childhood.”
+              </p>
+              <footer>— Elena K., 52, Seattle</footer>
+            </blockquote>
+            <blockquote className="testimonial">
+              <p>
+                “I made a small book from some honeymoon pictures. We colored one page every Sunday.”
+              </p>
+              <footer>— Marcus L., 38, Chicago</footer>
+            </blockquote>
+            <blockquote className="testimonial">
+              <p>
+                “I’m not an artist, so the tips helped me know exactly which pencils to use. The pages look grown-up, not cutesy or cartoonish.”
+              </p>
+              <footer>— Priya S., 47, Boston</footer>
+            </blockquote>
+          </div>
+
+          <div className="stats">
+            <div className="stats-inner">
+              <p className="stat">
+                <span>1000's</span> of pages created
+              </p>
+              <p className="stat">
+                <span>9/10</span> trial users color a page
+              </p>
+            </div>
+          </div>
+
+          <div className="inline-cta">
+            <a href="#hero-form" className="btn-primary">
+              Create my free coloring page
+            </a>
+            <p className="inline-cta-meta">Start with one photo that still makes you pause.</p>
+          </div>
+        </div>
+      </section>
+
       {/* FAQ */}
       <section id="faq" className="section section--white">
         <div className="container faq-heading">
@@ -1087,28 +1102,46 @@ export function LandingPage() {
 
           <div className="faq-list">
             {[
-              'Will the line art really look like my photo?',
-              'Is this going to feel childish?',
-              'I’m not an artist. Is this too advanced?',
-              'What happens to my photos?',
-              'How do I print and bind my pages?',
-              'What exactly do I get in the free trial?',
-            ].map((question, index) => (
-              <div key={question} className="faq-item">
-                <p className="faq-question">{question}</p>
-                <p className="faq-answer">
-                  {index === 0
-                    ? 'Yes. The model is trained to preserve faces and key details, not blur them. You’ll see a preview based on your actual photo before you download.'
-                    : index === 1
-                      ? 'No. There are no cartoon characters or clip-art backgrounds. The pages are designed for adults who like detail, subtle shading, and slower work with real artist-quality pencils.'
-                      : index === 2
-                        ? 'If you can color inside a line, you’re fine. Each page includes practical tips and specific pencil suggestions.'
-                        : index === 3
-                          ? 'Your images are encrypted in transit and used only to generate your art and tips. We don’t sell your data, and we delete your photos and files after 24 hours.'
-                          : index === 4
-                            ? 'Your file is ready for standard letter/A4. Print on heavier paper (80 lb. works well) or email it to a local print/office shop and ask for simple spiral or comb binding.'
-                            : 'You get a two-page pdf file for each photo: the full-page detailed line art, and a companion page with original photo and detailed color-specific tips.'}
-                </p>
+              {
+                q: 'Will the line art really look like my photo?',
+                a: 'Yes. The model is trained to preserve faces and key details, not blur them. You’ll see a preview based on your actual photo before you download.',
+              },
+              {
+                q: 'Is this going to feel childish?',
+                a: 'No. There are no cartoon characters or clip-art backgrounds. The pages are designed for adults who like detail, subtle shading, and slower work with real artist-quality pencils.',
+              },
+              {
+                q: 'I’m not an artist. Is this too advanced?',
+                a: 'If you can color inside a line, you’re fine. Each page includes practical tips and specific pencil suggestions.',
+              },
+              {
+                q: 'What happens to my photos?',
+                a: 'Your images are encrypted in transit and used only to generate your art and tips. We don’t sell your data, and we delete your photos and files right after creating your pdf.',
+              },
+              {
+                q: 'How do I print and bind my pages?',
+                a: 'Your file is ready for standard letter/A4. Print on heavier paper (80 lb. works well) or email it to a local print/office shop and ask for simple spiral or comb binding.',
+              },
+              {
+                q: 'What exactly do I get in the free trial?',
+                a: 'You get a two-page pdf file for each photo: the full-page detailed line art, and a companion page with original photo and detailed color-specific tips.',
+              },
+            ].map((item, index) => (
+              <div key={item.q} className="faq-item">
+                <button
+                  className="faq-question"
+                  onClick={() => setOpenFaqIndex(openFaqIndex === index ? null : index)}
+                  aria-expanded={openFaqIndex === index}
+                  aria-controls={`faq-answer-${index}`}
+                >
+                  {item.q}
+                  <span style={{ marginLeft: 'auto', fontWeight: 700 }}>{openFaqIndex === index ? '−' : '+'}</span>
+                </button>
+                {openFaqIndex === index && (
+                  <p id={`faq-answer-${index}`} className="faq-answer">
+                    {item.a}
+                  </p>
+                )}
               </div>
             ))}
           </div>
@@ -1145,7 +1178,7 @@ export function LandingPage() {
 
           <div className="inline-cta">
             <a href="#hero-form" className="btn-primary">
-              Turn my photo into a free page
+              Create my free colouring page
             </a>
             <p className="inline-cta-meta">
               If you’re done coloring generic designs, start with a single photo that still makes you feel something.
@@ -1158,15 +1191,15 @@ export function LandingPage() {
       <footer className="site-footer">
         <div className="container">
           <nav className="footer-nav">
-            <a href="#about">About</a>
+            <a href="/about">About</a>
             <span>|</span>
             <a href="#how-it-works">How it works</a>
             <span>|</span>
-            <a href="#privacy">Privacy</a>
+            <a href="/privacy">Privacy</a>
             <span>|</span>
-            <a href="#terms">Terms</a>
+            <a href="/terms">Terms</a>
             <span>|</span>
-            <a href="#contact">Contact</a>
+            <a href="/contact">Contact</a>
             <span>|</span>
             <a href="https://buymeacoffee.com/photolineart" target="_blank" rel="noreferrer">
               Buy us a coffee

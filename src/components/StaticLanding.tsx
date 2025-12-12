@@ -15,9 +15,9 @@ export function StaticLanding() {
             <a className="site-nav-link" href="#examples">
               Examples
             </a>
-            <a className="site-nav-link site-nav-login" href="#login">
+            {/* <a className="site-nav-link site-nav-login" href="#login">
               Login
-            </a>
+            </a> */}
           </nav>
         </div>
       </header>
