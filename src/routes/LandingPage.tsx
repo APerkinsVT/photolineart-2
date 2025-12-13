@@ -263,7 +263,7 @@ export function LandingPage() {
 
             <div style={{ display: 'flex', justifyContent: 'center', margin: '18px auto 20px' }}>
               <img
-                src="/images/dory-photo-lineart.png"
+                src="/images/travel-phone-photo-pair.png"
                 alt="Example photo and line art"
                 style={{
                   maxWidth: '520px',
@@ -276,10 +276,8 @@ export function LandingPage() {
             </div>
 
             <ul className="hero-bullets">
-              <li>
-                <strong>Transform</strong> real moments—family, pets, travel—into pages you’ll actually want
-                to color. Travelers, hobbyists, pet owners, and parents can re-live their memories in this artistic activity.
-              </li>
+              <li><strong>Transform</strong> real moments — travel, family, pets — into pages you’ll actually want
+                to color. Travelers, hobbyists, pet owners, and parents can re-live their memories in this artistic activity.</li>
               <li>Get specific pencil guidance matched to your exact photo and Faber-Castell set.</li>
               <li>Download a print-ready PDF and start coloring tonight.</li>
             </ul>
@@ -862,7 +860,7 @@ export function LandingPage() {
       </section>
 
       {/* Book teaser */}
-      <section className="section section--white">
+      <section className="section section--base">
         <div className="container" style={{ textAlign: 'center', maxWidth: '860px' }}>
           <h2 className="section-heading">Build a full coloring book from your favorite photos</h2>
           <div
@@ -915,7 +913,7 @@ export function LandingPage() {
       </section>
 
       {/* Solution / how it works */}
-      <section id="how-it-works" className="section section--base">
+      <section id="how-it-works" className="section section--white">
         <div className="container">
           <div className="solution-heading">
             <h2 className="section-heading">A coloring book made from your life</h2>
@@ -1095,7 +1093,7 @@ export function LandingPage() {
       </section>
 
       {/* FAQ */}
-      <section id="faq" className="section section--white">
+      <section id="faq" className="section section--base">
         <div className="container faq-heading">
           <h2 className="section-heading">Questions before you trust us with your favorite photos</h2>
           <h3 className="faq-subtitle">Fair. Here are straight answers.</h3>
