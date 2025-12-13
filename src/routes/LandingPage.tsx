@@ -277,7 +277,7 @@ export function LandingPage() {
 
             <ul className="hero-bullets">
               <li><strong>Transform</strong> real moments — travel, family, pets — into pages you’ll actually want
-                to color. Travelers, hobbyists, pet owners, and parents can re-live their memories in this artistic activity.</li>
+                to color. Travelers, hobbyists, pet owners, and families can re-live their memories in this artistic activity.</li>
               <li>Get specific pencil guidance matched to your exact photo and Faber-Castell set.</li>
               <li>Download a print-ready PDF and start coloring tonight.</li>
             </ul>
@@ -831,7 +831,7 @@ export function LandingPage() {
 
           <p className="problem-intro">
             You buy an “adult coloring book,” and sit down to relax… but it’s page after page of random mandalas,
-            forests, and quotes that mean nothing to you. You color a few, feel oddly flat, and the book disappears into a
+            forests, and quotes that mean nothing to you. You color a few and the book disappears into a
             drawer.
           </p>
 
@@ -843,7 +843,7 @@ export function LandingPage() {
             <div className="problem-card">
               <p className="problem-card-title">Lacks refinement</p>
               <p className="problem-card-text">
-                The art feels childish or noisy instead of thoughtful and refined.
+                The art looks childish or noisy instead of thoughtful and refined.
               </p>
             </div>
             <div className="problem-card">
