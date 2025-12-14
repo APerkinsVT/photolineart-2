@@ -263,7 +263,7 @@ export function LandingPage() {
 
             <div style={{ display: 'flex', justifyContent: 'center', margin: '18px auto 20px' }}>
               <img
-                src="/images/travel-phone-photo-pair.png"
+                src="/images/corgi-dog-with-line-art.png"
                 alt="Example photo and line art"
                 style={{
                   maxWidth: '520px',
@@ -1075,10 +1075,10 @@ export function LandingPage() {
           <div className="stats">
             <div className="stats-inner">
               <p className="stat">
-                <span>1000's</span> of pages created
+                <span>100's</span> of pages created
               </p>
               <p className="stat">
-                <span>9/10</span> trial users color a page
+                <span>Hours</span> of memories remmebered
               </p>
             </div>
           </div>

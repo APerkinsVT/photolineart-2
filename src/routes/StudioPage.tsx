@@ -276,6 +276,22 @@ export function StudioPage() {
             <p className="hero-lead">
               Upload up to 10 photos. We’ll turn them into high‑fidelity line art and personalized color guides, then auto‑publish a beautiful PDF coloring book that's ready to print or share.
             </p>
+
+            <div style={{ display: 'flex', justifyContent: 'center', margin: '18px auto 20px' }}>
+              <img
+                src="/images/boys-at-lake.png"
+                alt="Example photo and line art"
+                style={{
+                  maxWidth: '520px',
+                  width: '100%',
+                  borderRadius: '14px',
+                  boxShadow: '0 18px 35px rgba(0,0,0,0.08)',
+                  margin: '0 auto',
+                }}
+              />
+            </div>
+
+
             <div className="hero-cta">
               <a href="#studio-console" className="btn-primary" onClick={() => creatorRef.current?.scrollIntoView({ behavior: 'smooth' })}>
                 Start my book
@@ -298,7 +314,7 @@ export function StudioPage() {
               borderRadius: '18px',
               border: '1px solid var(--color-border)',
               boxShadow: '0 16px 40px rgba(0,0,0,0.08)',
-              padding: '1.75rem',
+              padding: '2rem',
             }}
           >
             <div style={{ textAlign: 'center', marginBottom: '1.25rem' }}>
