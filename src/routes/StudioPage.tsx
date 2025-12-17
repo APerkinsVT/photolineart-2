@@ -37,17 +37,28 @@ export function StudioPage() {
   const [bookSent, setBookSent] = useState(false);
   const [retentionChoice, setRetentionChoice] = useState<string>('');
   const [openStudioFaq, setOpenStudioFaq] = useState<number | null>(null);
+  const trackEvent = (metaEvent: string, gaEvent: string, payload?: Record<string, any>) => {
+    const win = typeof window !== 'undefined' ? (window as any) : null;
+    if (win?.fbq) {
+      try {
+        win.fbq('trackCustom', metaEvent, payload);
+      } catch (err) {
+        console.warn('fbq track failed', err);
+      }
+    }
+    if (win?.gtag) {
+      try {
+        win.gtag('event', gaEvent, payload);
+      } catch (err) {
+        console.warn('gtag track failed', err);
+      }
+    }
+  };
 
-  // GA page view for Studio
   useEffect(() => {
-    if (typeof window === 'undefined') return;
-    const gtag = (window as any).gtag;
-    if (!gtag) return;
-    gtag('event', 'page_view', {
+    trackEvent('PageView_Studio', 'page_view', {
       page_title: 'Studio',
-      page_path: window.location.pathname,
-      page_location: window.location.href,
-      send_to: 'G-3FFZS9JDZT',
+      page_path: typeof window !== 'undefined' ? window.location.pathname : '/studio',
     });
   }, []);
 
@@ -65,6 +76,7 @@ export function StudioPage() {
     }));
 
     if (next.length > 0) {
+      trackEvent('SP_ChoosePhotos', 'sp_choose_photos', { count: next.length });
       setStaged((prev: StagedItem[]): StagedItem[] => [...prev, ...next]);
     }
   };
@@ -88,6 +100,7 @@ export function StudioPage() {
       setTimeout(() => setAlerts([]), 3000);
       return;
     }
+    trackEvent('SP_StartProcessing', 'sp_start_processing', { count: selected.length });
     setExpectedCount(selected.length);
     setRetentionChoice('');
     const files = selected.map((s) => renameFileWithTitle(s.file, s.title));
@@ -252,6 +265,7 @@ export function StudioPage() {
         }),
       });
       void logRun(bundle.manifestUrl, finalUrl, photosCount, retentionChoice, uploadUrl, runId);
+      trackEvent('SP_EmailBook', 'sp_email_book', { retention: retentionChoice, photos: photosCount });
       setBookSent(true);
     } catch (err) {
       console.error(err);
@@ -293,7 +307,14 @@ export function StudioPage() {
 
 
             <div className="hero-cta">
-              <a href="#studio-console" className="btn-primary" onClick={() => creatorRef.current?.scrollIntoView({ behavior: 'smooth' })}>
+              <a
+                href="#studio-console"
+                className="btn-primary"
+                onClick={() => {
+                  trackEvent('SP_StartMyBook', 'sp_start_my_book');
+                  creatorRef.current?.scrollIntoView({ behavior: 'smooth' });
+                }}
+              >
                 Start my book
               </a>
             </div>

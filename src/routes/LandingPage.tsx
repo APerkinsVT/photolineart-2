@@ -48,6 +48,23 @@ export function LandingPage() {
   const [status, setStatus] = useState<StatusState>('idle');
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
   const statusTimers = useRef<number[]>([]);
+  const trackEvent = (metaEvent: string, gaEvent: string, payload?: Record<string, any>) => {
+    const win = typeof window !== 'undefined' ? (window as any) : null;
+    if (win?.fbq) {
+      try {
+        win.fbq('trackCustom', metaEvent, payload);
+      } catch (err) {
+        console.warn('fbq track failed', err);
+      }
+    }
+    if (win?.gtag) {
+      try {
+        win.gtag('event', gaEvent, payload);
+      } catch (err) {
+        console.warn('gtag track failed', err);
+      }
+    }
+  };
 
   const fcPaletteMap = useMemo(() => {
     const map: Record<string, FCPaletteEntry> = {};
@@ -79,6 +96,10 @@ export function LandingPage() {
   }, []);
 
   useEffect(() => {
+    trackEvent('PageView_Landing', 'page_view', {
+      page_title: 'Landing',
+      page_path: typeof window !== 'undefined' ? window.location.pathname : '/',
+    });
     async function loadPalette() {
       try {
         const res = await fetch('/palettes/faber-castell-polychromos.json');
@@ -118,6 +139,7 @@ export function LandingPage() {
       setFeedback({ message: 'Please provide a photo.', type: 'error' });
       return;
     }
+    trackEvent(photo ? 'LP_GetLineArt' : 'LP_CreateFreePage', 'lp_form_submit', { has_photo: !!photo });
 
     const formatTitle = (val: string) => {
       const base = val.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ').trim();
@@ -383,6 +405,11 @@ export function LandingPage() {
                         color: 'var(--color-text-secondary)',
                         marginBottom: '0.5rem',
                       }}
+                    onClick={() => {
+                      if (!downloadComplete) {
+                        trackEvent('LP_DownloadClick', 'lp_download_click', { email: !!email });
+                      }
+                    }}
                     >
                       Expert Tips
                     </h3>
@@ -577,7 +604,13 @@ export function LandingPage() {
                       type="file"
                       accept=".jpg,.jpeg,.png"
                       required
-                      onChange={(e) => setPhoto(e.target.files ? e.target.files[0] : null)}
+                      onChange={(e) => {
+                        const file = e.target.files ? e.target.files[0] : null;
+                        if (file) {
+                          trackEvent('LP_ChooseFile', 'lp_choose_file', { name: file.name });
+                        }
+                        setPhoto(file);
+                      }}
                     />
                     <p className="form-hint">JPG or PNG, up to 10 MB. Clear, well-lit photos work best.</p>
                   </div>
@@ -905,7 +938,11 @@ export function LandingPage() {
             <span>Auto-published with a link and a QR so you can re-download anytime.</span>
             <span>Pages follow your upload order—no extra steps required.</span>
           </div>
-          <a href="/studio" className="btn-primary">
+          <a
+            href="/studio"
+            className="btn-primary"
+            onClick={() => trackEvent('LP_SeeBooks', 'lp_see_books')}
+          >
             Learn about multi-page coloring books
           </a>
         </div>
@@ -974,7 +1011,11 @@ export function LandingPage() {
           </div>
 
           <div className="inline-cta">
-            <a href="#hero-form" className="btn-primary">
+            <a
+              href="#hero-form"
+              className="btn-primary"
+              onClick={() => trackEvent('LP_DownloadCTA', 'lp_download_cta')}
+            >
               Create my free coloring page
             </a>
             <p className="inline-cta-meta">Free trial: download one full-resolution page + expert tips, no credit card.</p>
