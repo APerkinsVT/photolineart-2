@@ -284,7 +284,7 @@ export function LandingPage() {
 
             <div className="hero-cta">
               <a href="#hero-form" className="btn-primary">
-                Create my free colouring page
+                Create my free coloring page
               </a>
             </div>
 
@@ -686,7 +686,7 @@ export function LandingPage() {
                         background: photo ? '#17494e' : undefined,
                       }}
                     >
-                      {isLoading ? 'Processing...' : photo ? 'Get my line art' : 'Create my free colouring page'}
+                      {isLoading ? 'Processing...' : photo ? 'Get my line art' : 'Create my free coloring page'}
                     </button>
                   </div>
                 </form>
@@ -826,34 +826,33 @@ export function LandingPage() {
       {/* Problem / agitation */}
       <section className="section section--white">
         <div className="container problem-section">
-          <h2 className="section-heading">Why most adult coloring books end up on a shelf</h2>
-          <h3 className="problem-subtitle">They calm your hands. Not your heart.</h3>
+          <h2 className="section-heading">Why this coloring book won't end up on a shelf</h2>
+          <h3 className="problem-subtitle">It activates your heart... not just your hands.</h3>
 
           <p className="problem-intro">
-            You buy an “adult coloring book,” and sit down to relax… but it’s page after page of random mandalas,
-            forests, and quotes that mean nothing to you. You color a few and the book disappears into a
+            Most “adult coloring books,” help you relax… but their scenes and drawings are unfamiliar to you. Without emotional resonance, it's easy for boredom to overtake your calm and the book to disappear into a
             drawer.
           </p>
 
           <div className="problem-grid">
             <div className="problem-card">
-              <p className="problem-card-title">Generic calm</p>
-              <p className="problem-card-text">You’re coloring someone else’s idea of calm, not your own memories.</p>
+              <p className="problem-card-title">Specific memories</p>
+              <p className="problem-card-text">You’re working with your own memories, not someone else’s idea of calm.</p>
             </div>
             <div className="problem-card">
-              <p className="problem-card-title">Lacks refinement</p>
+              <p className="problem-card-title">Refined focus</p>
               <p className="problem-card-text">
-                The art looks childish or noisy instead of thoughtful and refined.
+                Coloring books often focus on simple lines rather than capturing the details of photographic images .
               </p>
             </div>
             <div className="problem-card">
-              <p className="problem-card-title">Disposable ritual</p>
-              <p className="problem-card-text">After a week, the book is clutter, not a ritual.</p>
+              <p className="problem-card-title">Soothing ritual</p>
+              <p className="problem-card-text">After a week, spending time with these books and their memories can become a ritual.</p>
             </div>
           </div>
 
           <p className="problem-outro">
-            Now picture this instead: your grandmother’s kitchen, your dog on that favorite trail, or the café from your
+            Picture this: your grandmother’s kitchen, your dog on that favorite trail, or the café from your
             last big trip—quietly waiting on the page, ready to be brought back to life, stroke by stroke.
           </p>
         </div>
@@ -907,7 +906,7 @@ export function LandingPage() {
             <span>Pages follow your upload order—no extra steps required.</span>
           </div>
           <a href="/studio" className="btn-primary">
-            Learn about multi-page coloring books now
+            Learn about multi-page coloring books
           </a>
         </div>
       </section>
@@ -976,7 +975,7 @@ export function LandingPage() {
 
           <div className="inline-cta">
             <a href="#hero-form" className="btn-primary">
-              Create my free colouring page
+              Create my free coloring page
             </a>
             <p className="inline-cta-meta">Free trial: download one full-resolution page + expert tips, no credit card.</p>
           </div>
@@ -1075,10 +1074,7 @@ export function LandingPage() {
           <div className="stats">
             <div className="stats-inner">
               <p className="stat">
-                <span>100's</span> of pages created
-              </p>
-              <p className="stat">
-                <span>Hours</span> of memories remmebered
+                <span>100's</span> of pages created... hours of <span>memories</span>
               </p>
             </div>
           </div>
@@ -1114,7 +1110,7 @@ export function LandingPage() {
               },
               {
                 q: 'What happens to my photos?',
-                a: 'Your images are encrypted in transit and used only to generate your art and tips. We don’t sell your data, and we delete your photos and files right after creating your pdf.',
+                a: 'Your images are encrypted in transit and used only to generate your art and tips. We don’t sell your data. For single photo pages, we delete your photos and files right after creating your pdf. For multiple-photo coloring books, you will have a choice to delete immediately, or keep the pdf files for 30 days.',
               },
               {
                 q: 'How do I print and bind my pages?',
@@ -1176,7 +1172,7 @@ export function LandingPage() {
 
           <div className="inline-cta">
             <a href="#hero-form" className="btn-primary">
-              Create my free colouring page
+              Create my free coloring page
             </a>
             <p className="inline-cta-meta">
               If you’re done coloring generic designs, start with a single photo that still makes you feel something.
