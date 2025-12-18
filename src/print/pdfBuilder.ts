@@ -471,22 +471,6 @@ function renderTipColors(
   return cursorY + chipSize + chipSpacing + 2;
 }
 
-function renderBackCover(doc: jsPDF) {
-  const pageConfig = PAGE.portrait;
-  const margins = getPageMargins(pageConfig, doc.getNumberOfPages() || 1);
-  setHeadingFont(doc);
-  doc.setFontSize(FONTS.heading);
-  doc.text('Back Cover - TBD', margins.left, pageConfig.height / 2);
-}
-
-function renderInsideBackCoverPage(doc: jsPDF) {
-  const pageConfig = PAGE.portrait;
-  const margins = getPageMargins(pageConfig, doc.getNumberOfPages() || 1);
-  setHeadingFont(doc);
-  doc.setFontSize(FONTS.heading);
-  doc.text('Inside Back Cover - TBD', margins.left, pageConfig.height / 2);
-}
-
 function fitInsideBox(
   imageWidth: number,
   imageHeight: number,
@@ -621,10 +605,6 @@ async function buildBundleBookCommon(manifest: PortalManifest, mode: 'save' | 'd
     doc.addPage();
     await renderPortalSummaryPage(doc, manifest);
   }
-  doc.addPage();
-  renderInsideBackCoverPage(doc);
-  doc.addPage();
-  renderBackCover(doc);
 
   const fileName = `photolineart-book-${manifest.id}.pdf`;
   if (mode === 'save') {
