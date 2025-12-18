@@ -113,9 +113,12 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       },
     });
 
+    const bccList = process.env.SMTP_BCC ? process.env.SMTP_BCC.split(',').map((s) => s.trim()).filter(Boolean) : undefined;
+
     const mailOptions = {
       from: smtpFrom,
       to: parsed.to,
+      bcc: bccList,
       subject: parsed.subject,
       text:
         parsed.text ??
