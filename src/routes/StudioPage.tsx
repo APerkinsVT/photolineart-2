@@ -100,6 +100,10 @@ export function StudioPage() {
       setTimeout(() => setAlerts([]), 3000);
       return;
     }
+    // Keep the user focused on the upload console while processing kicks off
+    if (creatorRef.current) {
+      creatorRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
     trackEvent('SP_StartProcessing', 'sp_start_processing', { count: selected.length });
     setExpectedCount(selected.length);
     setRetentionChoice('');
@@ -561,6 +565,19 @@ export function StudioPage() {
                         Start processing ({selectedCount} selected)
                       </button>
                     </div>
+                  )}
+                  {expectedCount === 0 && selectedCount > 0 && selectedCount <= 10 && !bookEmail && (
+                    <p
+                      style={{
+                        marginTop: '0.4rem',
+                        color: '#b91c1c',
+                        fontWeight: 600,
+                        textAlign: 'center',
+                        fontSize: '0.9rem',
+                      }}
+                    >
+                      Enter your email above so we can send your PDF coloring book.
+                    </p>
                   )}
                 </div>
               )}
