@@ -631,7 +631,23 @@ export function StudioPage() {
                     gap: '0.65rem',
                   }}
                 >
-                  <div style={{ fontWeight: 700, color: 'var(--color-text-primary)' }}>Your coloring book is ready</div>
+                  <div
+                    style={
+                      bookSent
+                        ? {
+                            borderRadius: '10px',
+                            background: '#ecfdf3',
+                            color: '#166534',
+                            fontWeight: 700,
+                            padding: '0.75rem 1rem',
+                            textAlign: 'center',
+                            border: '1px solid #bbf7d0',
+                          }
+                        : { fontWeight: 700, color: 'var(--color-text-primary)' }
+                    }
+                  >
+                    {bookSent ? 'Your coloring book was sent — check your email.' : 'Your coloring book is ready'}
+                  </div>
                   <p style={{ margin: 0, color: 'var(--color-text-secondary)' }}>
                     We’ll email you the book PDF. Save it so you can reprint anytime.
                   </p>
