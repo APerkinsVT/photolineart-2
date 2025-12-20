@@ -43,6 +43,9 @@ export function LandingPage() {
   const [rating, setRating] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
+  const [offerModalOpen, setOfferModalOpen] = useState(false);
+  const [offerChoice, setOfferChoice] = useState<'paid' | 'free' | ''>('');
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [feedback, setFeedback] = useState<FeedbackState>({ message: '', type: '' });
   const [result, setResult] = useState<LineArtResponse | null>(null);
   const [status, setStatus] = useState<StatusState>('idle');
@@ -113,6 +116,22 @@ export function LandingPage() {
     loadPalette();
   }, []);
 
+  useEffect(() => {
+    if (!offerModalOpen) return;
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+    const handleKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        closeOfferModal();
+      }
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => {
+      document.body.style.overflow = previousOverflow;
+      window.removeEventListener('keydown', handleKey);
+    };
+  }, [offerModalOpen]);
+
   const buildPhotoItemFromResult = (res: LineArtResponse): PhotoItem => {
     const fileNameFromUrl =
       originalFileName || photo?.name || res.analysis.sourceImageUrl?.split('/').pop() || 'photolineart';
@@ -156,6 +175,8 @@ export function LandingPage() {
     setIsLoading(true);
     setResult(null);
     setDownloadComplete(false);
+    setOfferChoice('');
+    setOfferModalOpen(false);
     const formattedTitle = formatTitle(customTitle || photo.name || 'photolineart');
     setOriginalFileName(formattedTitle);
     setStatus('uploading');
@@ -240,6 +261,166 @@ export function LandingPage() {
       statusTimers.current = [];
       setIsLoading(false);
     }
+  };
+
+  const openOfferModal = () => {
+    setOfferModalOpen(true);
+    trackEvent('LP_OfferModalOpen', 'lp_offer_modal_open');
+  };
+
+  const closeOfferModal = () => {
+    setOfferModalOpen(false);
+  };
+
+  const chooseOffer = (choice: 'paid' | 'free') => {
+    setOfferChoice(choice);
+    setOfferModalOpen(false);
+    trackEvent(
+      choice === 'paid' ? 'LP_OfferPaidSelect' : 'LP_OfferFreeSelect',
+      choice === 'paid' ? 'lp_offer_paid' : 'lp_offer_free',
+    );
+  };
+
+  const startCheckout = async () => {
+    if (!email) return;
+    try {
+      setCheckoutLoading(true);
+      trackEvent('LP_CheckoutStart', 'lp_checkout_start', { offer: 'book5' });
+      const resp = await fetch('/api/create-checkout-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, offer: 'book5' }),
+      });
+      if (!resp.ok) {
+        const text = await resp.text();
+        throw new Error(text || 'Unable to start checkout');
+      }
+      const data = await resp.json();
+      if (data?.url) {
+        window.location.href = data.url;
+      } else {
+        throw new Error('Missing checkout URL');
+      }
+    } catch (err) {
+      console.error('Checkout failed', err);
+      setFeedback({
+        message: 'Unable to start checkout right now. Please try again.',
+        type: 'error',
+      });
+    } finally {
+      setCheckoutLoading(false);
+    }
+  };
+
+  const handleFreeDownload = async () => {
+    if (!email || !result) return;
+    try {
+      setIsDownloading(true);
+      const item = buildPhotoItemFromResult(result);
+      await downloadPdfForItem(item, window.location.origin);
+      setDownloadComplete(true);
+      try {
+        const { dataUrl, fileName } = await buildPdfDataUrlForItem(item, window.location.origin);
+        const upgradeUrl = `${window.location.origin}/studio?offer=book5`;
+        await fetch('/api/send-pdf', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            to: email,
+            pdfBase64: dataUrl,
+            filename: fileName,
+            subject: 'Your PhotoLineArt coloring page',
+            optIn: newsletterOptIn,
+            rating: rating || undefined,
+            source: 'single',
+            text: [
+              'Your coloring page is ready. The PDF is attached.',
+              `Want a 5‑photo coloring book? Build it here: ${upgradeUrl}`,
+              '',
+              'Privacy first: we delete your uploaded photo and generated line art right after sending this download.',
+              'If you ever want to make another page, just upload again.',
+            ].join('\n'),
+          }),
+        });
+      } catch (mailErr) {
+        console.warn('Email send failed (continuing):', mailErr);
+      }
+      try {
+        const urlsToDelete: string[] = [];
+        if (result.analysis.sourceImageUrl) urlsToDelete.push(result.analysis.sourceImageUrl);
+        if (result.lineArtUrl) urlsToDelete.push(result.lineArtUrl);
+        if (urlsToDelete.length > 0) {
+          await fetch('/api/delete-asset', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ urls: urlsToDelete }),
+          });
+        }
+      } catch (delErr) {
+        console.warn('Asset delete failed (continuing):', delErr);
+      }
+    } catch (err) {
+      console.error('Download failed', err);
+      setFeedback({
+        message: 'Unable to generate PDF right now. Please try again.',
+        type: 'error',
+      });
+    } finally {
+      setIsDownloading(false);
+    }
+  };
+
+  const sendFreePageEmailOnly = async () => {
+    if (!email || !result) return;
+    try {
+      const item = buildPhotoItemFromResult(result);
+      const { dataUrl, fileName } = await buildPdfDataUrlForItem(item, window.location.origin);
+      await fetch('/api/send-pdf', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          to: email,
+          pdfBase64: dataUrl,
+          filename: fileName,
+          subject: 'Your PhotoLineArt coloring page',
+          optIn: newsletterOptIn,
+          rating: rating || undefined,
+          source: 'single',
+          text: [
+            'Your free coloring page is ready. The PDF is attached.',
+            'Your 5‑photo coloring book will be ready after checkout.',
+            '',
+            'Privacy first: we delete your uploaded photo and generated line art right after sending this download.',
+          ].join('\n'),
+        }),
+      });
+      try {
+        const urlsToDelete: string[] = [];
+        if (result.analysis.sourceImageUrl) urlsToDelete.push(result.analysis.sourceImageUrl);
+        if (result.lineArtUrl) urlsToDelete.push(result.lineArtUrl);
+        if (urlsToDelete.length > 0) {
+          await fetch('/api/delete-asset', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ urls: urlsToDelete }),
+          });
+        }
+      } catch (delErr) {
+        console.warn('Asset delete failed (continuing):', delErr);
+      }
+    } catch (err) {
+      console.warn('Email-only send failed (continuing):', err);
+    }
+  };
+
+  const handleOfferSelection = async (choice: 'paid' | 'free') => {
+    chooseOffer(choice);
+    if (choice === 'paid') {
+      await sendFreePageEmailOnly();
+      await startCheckout();
+      return;
+    }
+    await handleFreeDownload();
   };
 
   return (
@@ -482,97 +663,31 @@ export function LandingPage() {
                   </div>
 
                   <div style={{ display: 'grid', gap: '0.5rem', marginTop: '1.25rem' }}>
-                    <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.95rem', color: 'var(--color-text-primary)', fontWeight: 500 }}>
-                      <input
-                        type="checkbox"
-                        checked={newsletterOptIn}
-                        onChange={(e) => setNewsletterOptIn(e.target.checked)}
-                        style={{ width: '16px', height: '16px' }}
-                      />
-                      <span>Send me advanced coloring ideas and new layout styles</span>
-                    </label>
-                    <label htmlFor="download-email" style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--color-text-primary)' }}>
-                      Enter email to receive your PDF + expert coloring tips
-                    </label>
-                    <input
-                      id="download-email"
-                      type="email"
-                      value={email}
-                      onChange={(e) => setEmail(e.target.value)}
-                      placeholder="you@email.com"
-                      style={{
-                        width: '100%',
-                        borderRadius: '0.6rem',
-                        border: '1px solid var(--color-border)',
-                        padding: '0.7rem 0.9rem',
-                        fontSize: '0.95rem',
-                      }}
-                      required
-                    />
-                    <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>
-                      We’ll email the high-res PDF and tips. No spam, just your download link.
-                    </p>
                     <button
                       className="btn-primary"
                       type="button"
-                      disabled={(!email && !downloadComplete) || isDownloading}
+                      disabled={isDownloading || checkoutLoading}
                       onClick={async () => {
                         if (downloadComplete) {
                           setResult(null);
                           setDownloadComplete(false);
+                          setOfferChoice('');
+                          setEmail('');
                           return;
                         }
-                        if (!email || !result) return;
-                        try {
-                          setIsDownloading(true);
-                          const item = buildPhotoItemFromResult(result);
-                          await downloadPdfForItem(item, window.location.origin);
-                          setDownloadComplete(true);
-                          try {
-                            const { dataUrl, fileName } = await buildPdfDataUrlForItem(item, window.location.origin);
-                            await fetch('/api/send-pdf', {
-                              method: 'POST',
-                              headers: { 'Content-Type': 'application/json' },
-                              body: JSON.stringify({
-                                to: email,
-                                pdfBase64: dataUrl,
-                                filename: fileName,
-                                subject: 'Your PhotoLineArt coloring page',
-                                optIn: newsletterOptIn,
-                                rating: rating || undefined,
-                                source: 'single',
-                              }),
-                            });
-                          } catch (mailErr) {
-                            console.warn('Email send failed (continuing):', mailErr);
-                          }
-                          try {
-                            const urlsToDelete: string[] = [];
-                            if (result.analysis.sourceImageUrl) urlsToDelete.push(result.analysis.sourceImageUrl);
-                            if (result.lineArtUrl) urlsToDelete.push(result.lineArtUrl);
-                            if (urlsToDelete.length > 0) {
-                              await fetch('/api/delete-asset', {
-                                method: 'POST',
-                                headers: { 'Content-Type': 'application/json' },
-                                body: JSON.stringify({ urls: urlsToDelete }),
-                              });
-                            }
-                          } catch (delErr) {
-                            console.warn('Asset delete failed (continuing):', delErr);
-                          }
-                        } catch (err) {
-                          console.error('Download failed', err);
-                          setFeedback({
-                            message: 'Unable to generate PDF right now. Please try again.',
-                            type: 'error',
-                          });
-                        } finally {
-                          setIsDownloading(false);
+                        if (!offerChoice || !email) {
+                          openOfferModal();
+                          return;
                         }
+                        if (offerChoice === 'paid') {
+                          await startCheckout();
+                          return;
+                        }
+                        await handleFreeDownload();
                       }}
                       style={{
-                        opacity: (email && !isDownloading) || downloadComplete ? 1 : 0.6,
-                        cursor: (email && !isDownloading) || downloadComplete ? 'pointer' : 'not-allowed',
+                        opacity: !isDownloading && !checkoutLoading ? 1 : 0.6,
+                        cursor: !isDownloading && !checkoutLoading ? 'pointer' : 'not-allowed',
                       }}
                     >
                       <Download size={18} style={{ marginRight: '0.5rem' }} />
@@ -582,7 +697,11 @@ export function LandingPage() {
                           : 'Create another'
                         : isDownloading
                           ? 'Preparing PDF...'
-                          : 'Download Coloring Page'}
+                          : checkoutLoading
+                            ? 'Starting checkout...'
+                            : offerChoice === 'paid'
+                              ? 'Continue to payment'
+                              : 'Download your free page'}
                     </button>
                   </div>
                 </div>
@@ -1246,6 +1365,75 @@ export function LandingPage() {
           </p>
         </div>
       </footer>
+
+      {offerModalOpen && (
+        <div
+          className="modal-overlay"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) {
+              closeOfferModal();
+            }
+          }}
+        >
+          <div className="modal-card" role="dialog" aria-modal="true" aria-labelledby="offer-title">
+            <button type="button" className="modal-close" onClick={closeOfferModal} aria-label="Close">
+              ×
+            </button>
+            <h3 id="offer-title" className="modal-title">
+              Want a 5‑photo coloring book for $19?
+            </h3>
+            <p className="modal-subtitle">
+              Get a printable book with custom palettes and tips for every photo. You’ll enter your email once either way.
+            </p>
+            <div style={{ display: 'grid', gap: '0.65rem' }}>
+              <label htmlFor="modal-email" style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--color-text-primary)' }}>
+                Enter email to receive your PDF + expert coloring tips
+              </label>
+              <input
+                id="modal-email"
+                type="email"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                placeholder="you@email.com"
+                style={{
+                  width: '100%',
+                  borderRadius: '0.6rem',
+                  border: '1px solid var(--color-border)',
+                  padding: '0.7rem 0.9rem',
+                  fontSize: '0.95rem',
+                }}
+                required
+              />
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.9rem', color: 'var(--color-text-primary)', fontWeight: 500 }}>
+                <input
+                  type="checkbox"
+                  checked={newsletterOptIn}
+                  onChange={(e) => setNewsletterOptIn(e.target.checked)}
+                  style={{ width: '16px', height: '16px' }}
+                />
+                <span>Send me advanced coloring ideas and new layout styles</span>
+              </label>
+              <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>
+                We’ll email the high-res PDF and tips. No spam, just your download link.
+              </p>
+            </div>
+
+            <div className="modal-actions">
+              <button type="button" className="btn-primary" onClick={() => handleOfferSelection('paid')} disabled={!email}>
+                Yes — upgrade to 5 photos for $19
+              </button>
+              <button type="button" className="btn-secondary" onClick={() => handleOfferSelection('free')} disabled={!email}>
+                No thanks — send my free page
+              </button>
+              {!email && (
+                <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>
+                  Enter your email above to continue.
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

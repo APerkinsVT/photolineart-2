@@ -1,4 +1,5 @@
 import { useEffect, useRef, useState } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { BatchSummary } from '../components/BatchSummary';
 import { UploadDropzone } from '../components/UploadDropzone';
 import { useBatchUploader } from '../state/useBatchUploader';
@@ -37,6 +38,9 @@ export function StudioPage() {
   const [bookSent, setBookSent] = useState(false);
   const [retentionChoice, setRetentionChoice] = useState<string>('');
   const [openStudioFaq, setOpenStudioFaq] = useState<number | null>(null);
+  const [searchParams] = useSearchParams();
+  const paidFlow = searchParams.get('paid') === '1';
+  const paidEmail = searchParams.get('email') ?? '';
   const trackEvent = (metaEvent: string, gaEvent: string, payload?: Record<string, any>) => {
     const win = typeof window !== 'undefined' ? (window as any) : null;
     if (win?.fbq) {
@@ -61,6 +65,12 @@ export function StudioPage() {
       page_path: typeof window !== 'undefined' ? window.location.pathname : '/studio',
     });
   }, []);
+
+  useEffect(() => {
+    if (paidEmail && !bookEmail) {
+      setBookEmail(paidEmail);
+    }
+  }, [paidEmail, bookEmail]);
 
   const handleAddFiles = async (files: FileList | File[]) => {
     const incoming = Array.from(files);
@@ -349,6 +359,11 @@ export function StudioPage() {
               <h2 className="section-heading" style={{ marginBottom: '0.5rem' }}>
                 Upload and publish automatically
               </h2>
+              {paidFlow && (
+                <p style={{ maxWidth: '640px', margin: '0.25rem auto 0', color: 'var(--color-text-primary)', fontWeight: 600 }}>
+                  Your free page is on the way. Now upload up to 5 photos for your paid coloring book.
+                </p>
+              )}
               <p style={{ maxWidth: '640px', margin: '0 auto', color: 'var(--color-text-secondary)', lineHeight: 1.6 }}>
                 Drag-and-drop multiple photos. After processing, we’ll send your print-ready book automatically. You can even re-title the photos for the page header.
               </p>
