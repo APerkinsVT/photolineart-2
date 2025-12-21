@@ -94,10 +94,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       body: params,
     });
 
-    const stripeData = (await stripeResp.json()) as {
-      url?: string;
-      error?: { message?: string };
-    };
+    const stripeData = (await stripeResp.json()) as any;
     if (!stripeResp.ok) {
       console.error('Stripe checkout failed', stripeData);
       return res.status(500).json({ error: stripeData?.error?.message || 'Stripe error' });
