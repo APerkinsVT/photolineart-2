@@ -285,11 +285,11 @@ export function LandingPage() {
     if (!email) return;
     try {
       setCheckoutLoading(true);
-      trackEvent('LP_CheckoutStart', 'lp_checkout_start', { offer: 'book5' });
+      trackEvent('LP_CheckoutStart', 'lp_checkout_start', { offer: 'book6' });
       const resp = await fetch('/api/create-checkout-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, offer: 'book5' }),
+        body: JSON.stringify({ email, offer: 'book6' }),
       });
       if (!resp.ok) {
         const text = await resp.text();
@@ -321,7 +321,7 @@ export function LandingPage() {
       setDownloadComplete(true);
       try {
         const { dataUrl, fileName } = await buildPdfDataUrlForItem(item, window.location.origin);
-        const upgradeUrl = `${window.location.origin}/studio?offer=book5`;
+        const upgradeUrl = `${window.location.origin}/studio?offer=book6`;
         await fetch('/api/send-pdf', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
@@ -335,7 +335,7 @@ export function LandingPage() {
             source: 'single',
             text: [
               'Your coloring page is ready. The PDF is attached.',
-              `Want a 5‑photo coloring book? Build it here: ${upgradeUrl}`,
+              `Want a 6‑photo coloring book? Build it here: ${upgradeUrl}`,
               '',
               'Privacy first: we delete your uploaded photo and generated line art right after sending this download.',
               'If you ever want to make another page, just upload again.',
@@ -388,7 +388,7 @@ export function LandingPage() {
           source: 'single',
           text: [
             'Your free coloring page is ready. The PDF is attached.',
-            'Your 5‑photo coloring book will be ready after checkout.',
+            'Your 6‑photo coloring book will be ready after checkout.',
             '',
             'Privacy first: we delete your uploaded photo and generated line art right after sending this download.',
           ].join('\n'),
@@ -457,7 +457,7 @@ export function LandingPage() {
 
             <p className="hero-lead">
               In minutes, our app turns a favorite photo into high-resolution line art,{' '}
-              complete with specific <strong>Faber-Castell color numbers</strong> and expert tips. Not generic patterns. Your
+              complete with specific <strong>Faber-Castell pencil numbers</strong> and expert tips. Not generic patterns. Your
               cherished moments, on paper.
             </p>
             <p className="hero-lead">
@@ -479,10 +479,10 @@ export function LandingPage() {
             </div>
 
             <ul className="hero-bullets">
-              <li><strong>Transform</strong> real moments — travel, family, pets — into pages you’ll actually want
-                to color. Travelers, hobbyists, pet owners, and families can re-live their memories in this artistic activity.</li>
-              <li>Get specific pencil guidance matched to your exact photo and Faber-Castell set.</li>
-              <li>Download a print-ready PDF and start coloring tonight.</li>
+              <li><strong>Transform</strong> real moments — family, travel, pets — into pages you’ll actually want
+                to color. Travelers, hobbyists, pet owners, and families can re-live their memories in this mindful activity.</li>
+              <li>Get specific color guidance matched to your exact photo and Faber-Castell pencil set.</li>
+              <li>Download a print-ready PDF and start coloring today.</li>
             </ul>
 
             <p className="hero-meta">No card. One photo. About 2 minutes.</p>
@@ -702,7 +702,7 @@ export function LandingPage() {
               </div>
             ) : (
               <div>
-                <h3 className="hero-form-title">Start with one photo you love</h3>
+                <h3 className="hero-form-title">Start with a photo you love</h3>
 
                 <form onSubmit={handleSubmit}>
 
@@ -983,12 +983,12 @@ export function LandingPage() {
           <div className="problem-grid">
             <div className="problem-card">
               <p className="problem-card-title">Specific memories</p>
-              <p className="problem-card-text">You’re working with your own memories, not someone else’s idea of calm.</p>
+              <p className="problem-card-text">You’re working with your own memories, not someone else’s vision.</p>
             </div>
             <div className="problem-card">
               <p className="problem-card-title">Refined focus</p>
               <p className="problem-card-text">
-                Coloring books often focus on simple lines rather than capturing the details of photographic images .
+                Coloring books often focus on simple lines rather than capturing the details of real photographic images .
               </p>
             </div>
             <div className="problem-card">
@@ -1007,7 +1007,12 @@ export function LandingPage() {
       {/* Book teaser */}
       <section className="section section--base">
         <div className="container" style={{ textAlign: 'center', maxWidth: '860px' }}>
-          <h2 className="section-heading">Build a full coloring book from your favorite photos</h2>
+          <h1 className="section-heading" style={{ marginBottom: '1.4rem' }}>
+            Like what you see?
+          </h1>
+          <h2 className="section-heading" style={{ marginBottom: '2.4rem' }}>
+            Build your custom coloring book from 6 favorite photos... just $19
+          </h2>
           <div
             style={{
               width: '100%',
@@ -1036,7 +1041,7 @@ export function LandingPage() {
                 }}></img>
           </div>
           <p className="problem-subtitle" style={{ marginBottom: '1rem' }}>
-            Upload up to 5 photos → get a printable book, ready for binding and holiday gifting.
+            Upload up to 6 photos → get a printable book, ready for binding and holiday gifting.
           </p>
           <div
             style={{
@@ -1048,7 +1053,7 @@ export function LandingPage() {
               fontSize: '0.95rem',
             }}
           >
-            <span>Auto-published with a link and a QR so you can re-download anytime.</span>
+            <span>Includes a link and QR code so you can re-download anytime.</span>
             <span>Pages follow your upload order—no extra steps required.</span>
           </div>
           <a
@@ -1056,7 +1061,7 @@ export function LandingPage() {
             className="btn-primary"
             onClick={() => trackEvent('LP_SeeBooks', 'lp_see_books')}
           >
-            Learn about multi-page coloring books
+            Make my 6-photo coloring book now!
           </a>
         </div>
       </section>
@@ -1075,14 +1080,14 @@ export function LandingPage() {
             <div className="solution-panel">
               <p className="solution-panel-label">Before</p>
               <p>
-                Your best moments are buried in phone backups and old albums. They’re important, but <strong>they are rarely seen.</strong>
+                Your best moments are buried in phone backups and old albums. They’re important to you, but <strong>rarely seen.</strong>
               </p>
               <hr />
               <p className="solution-panel-label" style={{ color: 'var(--color-cta-primary)', marginTop: '0.75rem' }}>
                 After
               </p>
               <p>
-                PhotoLineArt turns those same moments into gallery-quality line drawings with guided colors. You slow down. You remember. You create something{' '}
+                PhotoLineArt turns those same moments into gallery-quality line drawings with color guides. You slow down. You remember. You create something{' '}
                 <strong>tangible.</strong>
               </p>
               <p
@@ -1374,7 +1379,7 @@ export function LandingPage() {
               ×
             </button>
             <h3 id="offer-title" className="modal-title">
-              Want a 5‑photo coloring book for $19?
+              Want a 6‑photo coloring book for $19?
             </h3>
             <p className="modal-subtitle">
               Get a printable book with custom palettes and tips for every photo. You’ll enter your email once either way.
@@ -1414,7 +1419,7 @@ export function LandingPage() {
 
             <div className="modal-actions">
               <button type="button" className="btn-primary" onClick={() => handleOfferSelection('paid')} disabled={!email}>
-                Yes — upgrade to 5 photos for $19
+                Yes — upgrade to 6 photos for $19
               </button>
               <button type="button" className="btn-secondary" onClick={() => handleOfferSelection('free')} disabled={!email}>
                 No thanks — send my free page

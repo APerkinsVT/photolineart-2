@@ -9,7 +9,7 @@ Increase paid conversion from the single-page free flow by presenting a clear up
 1) User uploads a single photo and sees results on screen (line art + palette + tips).
 2) CTA button says: "Download your free page".
 3) Click opens a modal with two choices:
-   - Primary: "Get a 5‑photo book ready to print — $19"
+   - Primary: "Get a 6‑photo book ready to print — $19"
    - Secondary: "No thanks — send me my free page"
 4) Both paths request email first:
    - Paid path → Stripe Checkout → Studio (paid flow).
@@ -20,8 +20,8 @@ Notes:
 - Email is captured before the user leaves the page.
 
 ## Offer Variants (optional tests)
-- 5‑photo mini‑book: $19 (lower friction).
-- 10‑photo full book: $29 (higher perceived value).
+- 6‑photo mini‑book: $19 (lower friction).
+- Future: full book (price/size TBD).
 - Optional 48‑hour discount: "Save $5 if you upgrade today".
 
 ## Stripe + Upgrade Implementation Checklist

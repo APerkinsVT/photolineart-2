@@ -14,6 +14,8 @@ function renameFileWithTitle(file: File, title?: string) {
   return new File([file], `${cleanTitle}${ext}`, { type: file.type });
 }
 
+const MAX_BOOK_PHOTOS = 6;
+
 export function StudioPage() {
   const {
     addFiles,
@@ -34,6 +36,7 @@ export function StudioPage() {
   const [expectedCount, setExpectedCount] = useState(0);
   const [bookEmail, setBookEmail] = useState('');
   const [bookSending, setBookSending] = useState(false);
+  const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [sendStatus, setSendStatus] = useState<string>('');
   const [bookSent, setBookSent] = useState(false);
   const [retentionChoice, setRetentionChoice] = useState<string>('');
@@ -72,16 +75,52 @@ export function StudioPage() {
     }
   }, [paidEmail, bookEmail]);
 
+  useEffect(() => {
+    if (!paidFlow || !creatorRef.current) return;
+    creatorRef.current.scrollIntoView({ behavior: 'auto', block: 'start' });
+  }, [paidFlow]);
+
+  const startStudioCheckout = async () => {
+    if (!bookEmail) {
+      setAlerts(['Enter your email to continue to payment.']);
+      setTimeout(() => setAlerts([]), 3000);
+      return;
+    }
+    try {
+      setCheckoutLoading(true);
+      trackEvent('SP_CheckoutStart', 'sp_checkout_start', { offer: 'book6' });
+      const resp = await fetch('/api/create-checkout-session', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: bookEmail, offer: 'book6' }),
+      });
+      if (!resp.ok) {
+        const text = await resp.text();
+        throw new Error(text || 'Unable to start checkout');
+      }
+      const data = await resp.json();
+      if (!data?.url) {
+        throw new Error('Missing checkout URL');
+      }
+      window.location.href = data.url;
+    } catch (err) {
+      console.error('Studio checkout failed', err);
+      setAlerts(['Unable to start checkout right now. Please try again.']);
+      setTimeout(() => setAlerts([]), 3000);
+    } finally {
+      setCheckoutLoading(false);
+    }
+  };
+
   const handleAddFiles = async (files: FileList | File[]) => {
     const incoming = Array.from(files);
-    const maxCount = 10;
     const selectedCount = staged.filter((s) => s.selected).length;
 
     const next = incoming.map((file, index) => ({
       id: nanoid(),
       file,
       preview: URL.createObjectURL(file),
-      selected: selectedCount + index < maxCount,
+      selected: selectedCount + index < MAX_BOOK_PHOTOS,
       title: '', // user-editable; fallback to file.name when unused
     }));
 
@@ -298,11 +337,11 @@ export function StudioPage() {
         <div className="container hero">
           <div className="hero-inner" style={{ textAlign: 'center' }}>
             <p className="problem-subtitle" style={{ textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.05em' }}>
-              Creator Console
+              Coloring Book Creator
             </p>
-            <h1 className="hero-heading">Build a custom coloring book using your own photos</h1>
+            <h1 className="hero-heading">Build your custom coloring book using six of your favorite photos</h1>
             <p className="hero-lead">
-              Upload up to 5 photos. We’ll turn them into high‑fidelity line art with personalized color guides, then assemble a beautiful PDF coloring book that's ready to print or share.
+              Upload up to 6 photos. We’ll turn them into high‑fidelity line art with personalized coloring guides. In just a few minutes, we'll assemble and email your beautiful PDF that's ready to print or share.
             </p>
 
             <div style={{ display: 'flex', justifyContent: 'center', margin: '18px auto 4px' }}>
@@ -345,41 +384,50 @@ export function StudioPage() {
                 Upload console
               </p>
               <h2 className="section-heading" style={{ marginBottom: '0.5rem' }}>
-                Upload and publish automatically
+                Upload and create your book today!
               </h2>
               {paidFlow && (
                 <p style={{ maxWidth: '640px', margin: '0.25rem auto 0', color: 'var(--color-text-primary)', fontWeight: 600 }}>
-                  Your free page is on the way. Now upload up to 5 photos for your personal coloring book.
+                  Your free page is on the way. Now upload up to 6 photos for your personal coloring book.
                 </p>
               )}
-              <p style={{ maxWidth: '640px', margin: '0 auto', color: 'var(--color-text-secondary)', lineHeight: 1.6 }}>
-                Drag-and-drop your photos here. After processing, we’ll send your print-ready PDF book automatically.
-              </p>
-              <div style={{ marginTop: '1rem' }}>
-                <label style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--color-text-primary)' }}>If you use Faber‑Castell Polychromos pencils, choose your set below:</label>
-                <div style={{ marginTop: '0.5rem', display: 'flex', gap: '0.75rem', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap' }}>
-                  <select
-                    value={setSize}
-                    onChange={(event) => setSetSize(Number(event.target.value))}
-                    style={{
-                      borderRadius: '12px',
-                      border: '1px solid var(--color-border)',
-                      padding: '0.5rem 0.75rem',
-                      minWidth: '200px',
-                    }}
-                  >
-                    {[120, 72, 60, 36, 24, 12].map((size) => (
-                      <option key={size} value={size}>
-                        {size}-pencil set
-                      </option>
-                    ))}
-                  </select>
-
-                </div>
-              <p style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>
-                Color palettes match the selected pencil set + expert tips are generated for your exact photos. Don't use Faber-Castell pencils? No problem! Just match your pencils to the closest suggested color in each photo's palette.
-              </p>              
-              </div>
+              {paidFlow ? (
+                <>
+                  <p style={{ maxWidth: '640px', margin: '0 auto', color: 'var(--color-text-secondary)', lineHeight: 1.6 }}>
+                    Drag-and-drop your photos here. After processing, we’ll send your print-ready PDF book automatically.
+                  </p>
+                  <div style={{ marginTop: '1rem' }}>
+                    <label style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--color-text-primary)' }}>
+                      If you use Faber‑Castell Polychromos pencils, choose your set below:
+                    </label>
+                    <div style={{ marginTop: '0.5rem', display: 'flex', gap: '0.75rem', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap' }}>
+                      <select
+                        value={setSize}
+                        onChange={(event) => setSetSize(Number(event.target.value))}
+                        style={{
+                          borderRadius: '12px',
+                          border: '1px solid var(--color-border)',
+                          padding: '0.5rem 0.75rem',
+                          minWidth: '200px',
+                        }}
+                      >
+                        {[120, 72, 60, 36, 24, 12].map((size) => (
+                          <option key={size} value={size}>
+                            {size}-pencil set
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <p style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>
+                      Color palettes match the selected pencil set + expert tips are generated for your exact photos. Don't use Faber-Castell pencils? No problem! Just match your pencils to the closest suggested color in each photo's palette.
+                    </p>
+                  </div>
+                </>
+              ) : (
+                <p style={{ maxWidth: '640px', margin: '0 auto', color: 'var(--color-text-secondary)', lineHeight: 1.6 }}>
+                  Build your personal memory book for only $19. Up to 6 photos. Enter your email below to continue to checkout.
+                </p>
+              )}
             </div>
 
             {(alerts.length > 0 || lastError) && (
@@ -422,44 +470,96 @@ export function StudioPage() {
             )}
 
             <div style={{ display: 'grid', gap: '1.25rem', marginTop: '1.25rem' }}>
-              <div
-                style={{
-                  border: '1px dashed var(--color-border)',
-                  borderRadius: '12px',
-                  padding: '0.85rem',
-                  background: '#fff',
-                  display: 'grid',
-                  gap: '0.5rem',
-                }}
-              >
-                <label style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--color-text-primary)' }}>
-                  Enter your email to receive your finished book
-                </label>
-                <input
-                  type="email"
-                  value={bookEmail}
-                  onChange={(e) => setBookEmail(e.target.value)}
-                  placeholder="you@email.com"
+              {!paidFlow ? (
+                <div
                   style={{
-                    border: '1px solid var(--color-border)',
-                    borderRadius: '10px',
-                    padding: '0.65rem 0.75rem',
-                    fontSize: '0.95rem',
+                    border: '1px dashed var(--color-border)',
+                    borderRadius: '12px',
+                    padding: '1rem',
+                    background: '#fff',
+                    display: 'grid',
+                    gap: '0.75rem',
+                    textAlign: 'center',
                   }}
-                />
-                <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>
-                  We’ll email the finished PDF. You can choose to delete your photos and PDF right away or save them for 30 days.
-                </p>
-              </div>
+                >
+                  <h3 style={{ margin: 0, fontSize: '1.1rem', color: 'var(--color-text-primary)' }}>
+                    Generate your custom coloring book
+                  </h3>
+                  <p style={{ margin: 0, color: 'var(--color-text-secondary)' }}>
+                    Checkout unlocks your upload console. You’ll return here to add photos after checkout.
+                  </p>
+                  <div style={{ display: 'grid', gap: '0.5rem' }}>
+                    <label style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--color-text-primary)' }}>
+                      Enter your email to continue to checkout
+                    </label>
+                    <input
+                      type="email"
+                      value={bookEmail}
+                      onChange={(e) => setBookEmail(e.target.value)}
+                      placeholder="you@email.com"
+                      style={{
+                        border: '1px solid var(--color-border)',
+                        borderRadius: '10px',
+                        padding: '0.65rem 0.75rem',
+                        fontSize: '0.95rem',
+                      }}
+                    />
+                  </div>
+                  <button
+                    type="button"
+                    className="btn-primary"
+                    onClick={startStudioCheckout}
+                    disabled={!bookEmail || checkoutLoading}
+                    style={{
+                      opacity: !bookEmail || checkoutLoading ? 0.6 : 1,
+                      cursor: !bookEmail || checkoutLoading ? 'not-allowed' : 'pointer',
+                    }}
+                  >
+                    {checkoutLoading ? 'Starting checkout...' : 'Continue to checkout'}
+                  </button>
+                </div>
+              ) : (
+                <>
+                  <div
+                    style={{
+                      border: '1px dashed var(--color-border)',
+                      borderRadius: '12px',
+                      padding: '0.85rem',
+                      background: '#fff',
+                      display: 'grid',
+                      gap: '0.5rem',
+                    }}
+                  >
+                    <label style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--color-text-primary)' }}>
+                      Enter your email to receive your finished book
+                    </label>
+                    <input
+                      type="email"
+                      value={bookEmail}
+                      onChange={(e) => setBookEmail(e.target.value)}
+                      placeholder="you@email.com"
+                      style={{
+                        border: '1px solid var(--color-border)',
+                        borderRadius: '10px',
+                        padding: '0.65rem 0.75rem',
+                        fontSize: '0.95rem',
+                      }}
+                    />
+                    <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>
+                      We’ll email the finished PDF. You can choose to delete your photos and PDF right away or save them for 30 days.
+                    </p>
+                  </div>
 
-              {expectedCount === 0 && (
-                <UploadDropzone
-                  onFilesSelected={handleAddFiles}
-                  currentCount={selectedCount}
-                />
+                  {expectedCount === 0 && (
+                    <UploadDropzone
+                      onFilesSelected={handleAddFiles}
+                      currentCount={selectedCount}
+                    />
+                  )}
+                </>
               )}
 
-              {expectedCount === 0 && staged.length > 0 && (
+              {paidFlow && expectedCount === 0 && staged.length > 0 && (
                 <div
                   style={{
                     border: '1px solid var(--color-border)',
@@ -550,26 +650,26 @@ export function StudioPage() {
                     ))}
                   </div>
                   <div style={{ marginTop: '0.6rem', textAlign: 'center' }}>
-                    {selectedCount > 10 && (
+                    {selectedCount > MAX_BOOK_PHOTOS && (
                       <span style={{ color: '#b91c1c', fontWeight: 700, fontSize: '0.9rem' }}>
-                        Uncheck {selectedCount - 10} or more photos. Max = 10.
+                        Uncheck {selectedCount - MAX_BOOK_PHOTOS} or more photos. Max = {MAX_BOOK_PHOTOS}.
                       </span>
                     )}
                   </div>
-                  {expectedCount === 0 && (
+                  {paidFlow && expectedCount === 0 && (
                     <div style={{ marginTop: '0.5rem', display: 'flex', justifyContent: 'center' }}>
                       <button
                         type="button"
                         className="btn-primary"
                         onClick={startProcessing}
-                        disabled={selectedCount === 0 || selectedCount > 10 || !bookEmail}
-                        style={{ opacity: selectedCount === 0 || selectedCount > 10 || !bookEmail ? 0.6 : 1 }}
+                        disabled={selectedCount === 0 || selectedCount > MAX_BOOK_PHOTOS || !bookEmail}
+                        style={{ opacity: selectedCount === 0 || selectedCount > MAX_BOOK_PHOTOS || !bookEmail ? 0.6 : 1 }}
                       >
                         Start processing ({selectedCount} selected)
                       </button>
                     </div>
                   )}
-                  {expectedCount === 0 && selectedCount > 0 && selectedCount <= 10 && !bookEmail && (
+                  {paidFlow && expectedCount === 0 && selectedCount > 0 && selectedCount <= MAX_BOOK_PHOTOS && !bookEmail && (
                     <p
                       style={{
                         marginTop: '0.4rem',
@@ -585,135 +685,204 @@ export function StudioPage() {
                 </div>
               )}
 
-              <BatchSummary {...stats} />
+              {paidFlow && (
+                <>
+                  <BatchSummary {...stats} />
 
-              {expectedCount > 0 && !bundle && (
-                <div style={{ margin: '0.5rem 0', textAlign: 'center' }}>
-                  <p style={{ margin: 0, color: 'var(--color-text-secondary)', fontWeight: 600 }}>
-                    {isPublishing
-                      ? 'Preparing your one-of-a-kind personalized coloring book…'
-                      : 'Finishing up your book and getting it ready…'}
-                  </p>
-                  <p style={{ margin: '0.35rem 0 0 0', color: 'var(--color-text-secondary)', fontSize: '0.9rem' }}>
-                    We’ll email it to {bookEmail || 'your email'} in about 8–10 minutes.
-                  </p>
-                  <div style={{ display: 'flex', justifyContent: 'center', gap: '0.35rem', marginTop: '0.4rem', color: 'var(--color-cta-primary)' }}>
-                    <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: 'currentColor', animation: 'bounce 1s infinite' }} />
-                    <span
-                      style={{
-                        width: '10px',
-                        height: '10px',
-                        borderRadius: '50%',
-                        background: 'currentColor',
-                        animation: 'bounce 1s infinite',
-                        animationDelay: '0.15s',
-                      }}
-                    />
-                    <span
-                      style={{
-                        width: '10px',
-                        height: '10px',
-                        borderRadius: '50%',
-                        background: 'currentColor',
-                        animation: 'bounce 1s infinite',
-                        animationDelay: '0.3s',
-                      }}
-                    />
-                  </div>
-                </div>
-              )}
+                  {expectedCount > 0 && !bundle && (
+                    <div style={{ margin: '0.5rem 0', textAlign: 'center' }}>
+                      <p style={{ margin: 0, color: 'var(--color-text-secondary)', fontWeight: 600 }}>
+                        {isPublishing
+                          ? 'Preparing your one-of-a-kind personalized coloring book…'
+                          : 'Finishing up your book and getting it ready…'}
+                      </p>
+                      <p style={{ margin: '0.35rem 0 0 0', color: 'var(--color-text-secondary)', fontSize: '0.9rem' }}>
+                        We’ll email it to {bookEmail || 'your email'} in about 8–10 minutes.
+                      </p>
+                      <div style={{ display: 'flex', justifyContent: 'center', gap: '0.35rem', marginTop: '0.4rem', color: 'var(--color-cta-primary)' }}>
+                        <span style={{ width: '10px', height: '10px', borderRadius: '50%', background: 'currentColor', animation: 'bounce 1s infinite' }} />
+                        <span
+                          style={{
+                            width: '10px',
+                            height: '10px',
+                            borderRadius: '50%',
+                            background: 'currentColor',
+                            animation: 'bounce 1s infinite',
+                            animationDelay: '0.15s',
+                          }}
+                        />
+                        <span
+                          style={{
+                            width: '10px',
+                            height: '10px',
+                            borderRadius: '50%',
+                            background: 'currentColor',
+                            animation: 'bounce 1s infinite',
+                            animationDelay: '0.3s',
+                          }}
+                        />
+                      </div>
+                    </div>
+                  )}
 
-              {bundle && (
-                <div
-                  style={{
-                    border: '1px solid var(--color-border)',
-                    borderRadius: '12px',
-                    padding: '1rem',
-                    background: '#f7f3ec',
-                    display: 'grid',
-                    gap: '0.65rem',
-                  }}
-                >
-                  <div
-                    style={
-                      bookSent
-                        ? {
-                            borderRadius: '10px',
-                            background: '#ecfdf3',
-                            color: '#166534',
-                            fontWeight: 700,
-                            padding: '0.75rem 1rem',
-                            textAlign: 'center',
-                            border: '1px solid #bbf7d0',
-                          }
-                        : { fontWeight: 700, color: 'var(--color-text-primary)' }
-                    }
-                  >
-                    {bookSent ? 'Your coloring book was sent — check your email.' : 'Your coloring book is ready'}
-                  </div>
-                  <p style={{ margin: 0, color: 'var(--color-text-secondary)' }}>
-                    We’ll email you the book PDF. Save it so you can reprint anytime.
-                  </p>
-                  <label style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--color-text-primary)' }}>
-                    Email address
-                  </label>
-                  <input
-                    type="email"
-                    value={bookEmail}
-                    onChange={(e) => setBookEmail(e.target.value)}
-                    style={{
-                      border: '1px solid var(--color-border)',
-                      borderRadius: '10px',
-                      padding: '0.65rem 0.75rem',
-                      fontSize: '0.95rem',
-                    }}
-                    placeholder="you@email.com"
-                  />
-                  <div style={{ display: 'grid', gap: '0.35rem' }}>
-                    <label style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--color-text-primary)' }}>
-                      File handling after send (required)
-                    </label>
-                    <select
-                      value={retentionChoice}
-                      onChange={(e) => setRetentionChoice(e.target.value)}
-                      disabled={bookSending || bookSent}
+                  {bundle && (
+                    <div
                       style={{
                         border: '1px solid var(--color-border)',
-                        borderRadius: '10px',
-                        padding: '0.55rem 0.65rem',
-                        fontSize: '0.95rem',
+                        borderRadius: '12px',
+                        padding: '1rem',
+                        background: '#f7f3ec',
+                        display: 'grid',
+                        gap: '0.65rem',
                       }}
                     >
-                      <option value="">Choose an option</option>
-                      <option value="delete_after_send">Delete my photos and book after sending</option>
-                      <option value="keep_30_days">Keep my files for 30 days (for resend requests)</option>
-                    </select>
-                  </div>
-                  {!bookSent && (
-                    <button
-                      type="button"
-                      className="btn-primary"
-                      onClick={sendBookEmail}
-                      disabled={!bookEmail || !retentionChoice || bookSending}
-                      style={{ opacity: bookEmail && retentionChoice && !bookSending ? 1 : 0.6 }}
-                    >
-                      {bookSending ? 'Sending…' : 'Email my book'}
-                    </button>
+                      <div
+                        style={
+                          bookSent
+                            ? {
+                                borderRadius: '10px',
+                                background: '#ecfdf3',
+                                color: '#166534',
+                                fontWeight: 700,
+                                padding: '0.75rem 1rem',
+                                textAlign: 'center',
+                                border: '1px solid #bbf7d0',
+                              }
+                            : { fontWeight: 700, color: 'var(--color-text-primary)' }
+                        }
+                      >
+                        {bookSent ? 'Your coloring book was sent — check your email.' : 'Your coloring book is ready'}
+                      </div>
+                      <p style={{ margin: 0, color: 'var(--color-text-secondary)' }}>
+                        We’ll email you the book PDF. Save it so you can reprint anytime.
+                      </p>
+                      <label style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--color-text-primary)' }}>
+                        Email address
+                      </label>
+                      <input
+                        type="email"
+                        value={bookEmail}
+                        onChange={(e) => setBookEmail(e.target.value)}
+                        style={{
+                          border: '1px solid var(--color-border)',
+                          borderRadius: '10px',
+                          padding: '0.65rem 0.75rem',
+                          fontSize: '0.95rem',
+                        }}
+                        placeholder="you@email.com"
+                      />
+                      <div style={{ display: 'grid', gap: '0.35rem' }}>
+                        <label style={{ fontSize: '0.9rem', fontWeight: 700, color: 'var(--color-text-primary)' }}>
+                          File handling after send (required)
+                        </label>
+                        <select
+                          value={retentionChoice}
+                          onChange={(e) => setRetentionChoice(e.target.value)}
+                          disabled={bookSending || bookSent}
+                          style={{
+                            border: '1px solid var(--color-border)',
+                            borderRadius: '10px',
+                            padding: '0.55rem 0.65rem',
+                            fontSize: '0.95rem',
+                          }}
+                        >
+                          <option value="">Choose an option</option>
+                          <option value="delete_after_send">Delete my photos and book after sending</option>
+                          <option value="keep_30_days">Keep my files for 30 days (for resend requests)</option>
+                        </select>
+                      </div>
+                      {!bookSent && (
+                        <button
+                          type="button"
+                          className="btn-primary"
+                          onClick={sendBookEmail}
+                          disabled={!bookEmail || !retentionChoice || bookSending}
+                          style={{ opacity: bookEmail && retentionChoice && !bookSending ? 1 : 0.6 }}
+                        >
+                          {bookSending ? 'Sending…' : 'Email my book'}
+                        </button>
+                      )}
+                      {bookSending && (
+                        <p style={{ margin: 0, color: 'var(--color-text-secondary)', fontSize: '0.9rem' }}>
+                          {sendStatus || 'Packaging your coloring book for email…'}
+                        </p>
+                      )}
+                      {bookSent && (
+                        <p style={{ margin: 0, color: 'var(--color-text-secondary)', fontSize: '0.9rem', fontWeight: 700 }}>
+                          PDF sent and cleanup complete. Check your email.
+                        </p>
+                      )}
+                    </div>
                   )}
-                  {bookSending && (
-                    <p style={{ margin: 0, color: 'var(--color-text-secondary)', fontSize: '0.9rem' }}>
-                      {sendStatus || 'Packaging your coloring book for email…'}
-                    </p>
-                  )}
-                  {bookSent && (
-                    <p style={{ margin: 0, color: 'var(--color-text-secondary)', fontSize: '0.9rem', fontWeight: 700 }}>
-                      PDF sent and cleanup complete. Check your email.
-                    </p>
-                  )}
-                </div>
+                </>
               )}
             </div>
           </div>
+        </div>
+      </section>
+
+      <section className="section section--base">
+        <div className="container" style={{ textAlign: 'center', maxWidth: '860px' }}>
+          <h1 className="section-heading" style={{ marginTop: 0, marginBottom: '0.35rem' }}>
+            Like what you see?
+          </h1>
+          <h2 className="section-heading" style={{ marginBottom: '1.4rem' }}>
+            Build your custom coloring book from 6 favorite photos... just $19
+          </h2>
+          <div
+            style={{
+              width: '100%',
+              maxWidth: '640px',
+              margin: '0 auto 1rem auto',
+              border: '1px dashed var(--color-text-secondary)',
+              borderRadius: '12px',
+              background: 'var(--color-base)',
+              minHeight: '260px',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              color: 'var(--color-text-secondary)',
+              fontWeight: 600,
+            }}
+          >
+            <img
+              src="/images/coloring-book-sample.jpg"
+              alt="Example coloring book pages"
+              style={{
+                maxWidth: '520px',
+                width: '100%',
+                borderRadius: '14px',
+                boxShadow: '0 18px 35px rgba(0,0,0,0.08)',
+                margin: '0 auto',
+              }}
+            />
+          </div>
+          <p className="problem-subtitle" style={{ marginBottom: '1rem' }}>
+            Upload up to 6 photos → get a printable book, ready for binding and holiday gifting.
+          </p>
+          <div
+            style={{
+              display: 'grid',
+              gap: '0.5rem',
+              justifyItems: 'center',
+              marginBottom: '0.75rem',
+              color: 'var(--color-text-secondary)',
+              fontSize: '0.95rem',
+            }}
+          >
+            <span>Includes a link and QR code so you can re-download anytime.</span>
+            <span>Pages follow your upload order—no extra steps required.</span>
+          </div>
+          <a
+            href="#studio-console"
+            className="btn-primary"
+            onClick={() => {
+              trackEvent('SP_SeeBooks', 'sp_see_books');
+              creatorRef.current?.scrollIntoView({ behavior: 'smooth' });
+            }}
+          >
+            Make my 6-photo coloring book now!
+          </a>
         </div>
       </section>
 
@@ -749,7 +918,7 @@ export function StudioPage() {
               },
               {
                 q: 'How big can my book be?',
-                a: 'Up to 5 photos per book. Each photo becomes a line art page with a paired tips page.',
+                a: 'Up to 6 photos per book. Each photo becomes a line art page with a paired tips page.',
               },
               {
                 q: 'Will you keep my files?',
@@ -811,7 +980,7 @@ export function StudioPage() {
             </div>
             <div className="final-grid-item">
               <p className="final-grid-item-title">Fast</p>
-              <p>Up to 10 pages in minutes, ready to print and color.</p>
+              <p>Up to 6 photos in minutes, ready to print and color.</p>
             </div>
           </div>
           <div className="hero-cta">

@@ -60,10 +60,15 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const payload = typeof req.body === 'string' ? JSON.parse(req.body) : req.body;
     const parsed = bodySchema.parse(payload);
 
-    const secretKey = getRequiredEnv('STRIPE_SECRET_KEY');
-    const priceBook5 = getRequiredEnv('STRIPE_PRICE_ID_BOOK');
-    const offer = parsed.offer ?? 'book5';
-    const priceId = priceBook5;
+    const isProd = process.env.NODE_ENV === 'production';
+    const secretKey = getRequiredEnv(
+      isProd ? 'STRIPE_SECRET_LIVE_KEY' : 'STRIPE_SECRET_TEST_KEY'
+    );
+    const priceBook6 = getRequiredEnv(
+      isProd ? 'STRIPE_PRICE_ID_6_BOOK_LIVE' : 'STRIPE_PRICE_ID_6_BOOK_TEST'
+    );
+    const offer = parsed.offer ?? 'book6';
+    const priceId = priceBook6;
 
     const baseUrl = getBaseUrl(req);
 

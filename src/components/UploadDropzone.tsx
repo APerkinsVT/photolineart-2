@@ -9,7 +9,7 @@ interface UploadDropzoneProps {
 export function UploadDropzone({ onFilesSelected, currentCount = 0 }: UploadDropzoneProps) {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [isDragging, setIsDragging] = useState(false);
-  const maxPhotos = 10;
+  const maxPhotos = 6;
   const buttonLabel =
     currentCount > 0 && currentCount < maxPhotos ? 'Add more photos' : 'Choose photos now';
 
@@ -60,7 +60,7 @@ export function UploadDropzone({ onFilesSelected, currentCount = 0 }: UploadDrop
         Drop your photos here
       </p>
       <p style={{ fontSize: '0.95rem', color: 'var(--color-text-secondary)' }}>
-        Drag and drop up to 10 JPG/PNG/WebP images (≤3 MB each) or click to choose files.
+        Drag and drop up to 6 JPG/PNG/WebP images (≤3 MB each) or click to choose files.
       </p>
       <div style={{ marginTop: '0.9rem', display: 'flex', gap: '0.6rem', flexWrap: 'wrap', justifyContent: 'center' }}>
         <button
@@ -75,7 +75,7 @@ export function UploadDropzone({ onFilesSelected, currentCount = 0 }: UploadDrop
       {currentCount > maxPhotos && (
         <div style={{ marginTop: '0.6rem', fontSize: '0.85rem', color: '#b91c1c', fontWeight: 600 }}>
           <p style={{ margin: 0 }}>
-            Limit reached. Choose no more than 10 photos.
+            Limit reached. Choose no more than 6 photos.
           </p>
         </div>
       )}
