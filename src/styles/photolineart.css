@@ -89,6 +89,10 @@ a {
   background-color: var(--color-final-cta-bg);
 }
 
+.section--tight-bottom {
+  padding-bottom: 2.5rem;
+}
+
 .section + .section {
   margin-top: 4rem;
 }

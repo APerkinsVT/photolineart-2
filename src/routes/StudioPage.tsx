@@ -294,7 +294,7 @@ export function StudioPage() {
 
   return (
     <div className="page" style={{ paddingBottom: '4rem' }}>
-      <section className="section section--base">
+      <section className="section section--base section--tight-bottom">
         <div className="container hero">
           <div className="hero-inner" style={{ textAlign: 'center' }}>
             <p className="problem-subtitle" style={{ textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.05em' }}>
@@ -302,10 +302,10 @@ export function StudioPage() {
             </p>
             <h1 className="hero-heading">Build a custom coloring book using your own photos</h1>
             <p className="hero-lead">
-              Upload up to 10 photos. We’ll turn them into high‑fidelity line art and personalized color guides, then auto‑publish a beautiful PDF coloring book that's ready to print or share.
+              Upload up to 5 photos. We’ll turn them into high‑fidelity line art with personalized color guides, then assemble a beautiful PDF coloring book that's ready to print or share.
             </p>
 
-            <div style={{ display: 'flex', justifyContent: 'center', margin: '18px auto 20px' }}>
+            <div style={{ display: 'flex', justifyContent: 'center', margin: '18px auto 4px' }}>
               <img
                 src="/images/boys-at-lake.png"
                 alt="Example photo and line art"
@@ -320,18 +320,6 @@ export function StudioPage() {
             </div>
 
 
-            <div className="hero-cta">
-              <a
-                href="#studio-console"
-                className="btn-primary"
-                onClick={() => {
-                  trackEvent('SP_StartMyBook', 'sp_start_my_book');
-                  creatorRef.current?.scrollIntoView({ behavior: 'smooth' });
-                }}
-              >
-                Start my book
-              </a>
-            </div>
             {expectedCount > 0 && (
               <p className="hero-meta" style={{ marginTop: '0.35rem' }}>
                 Processing {expectedCount} photo(s)… we’ll email your book as soon as it’s ready.
@@ -361,14 +349,14 @@ export function StudioPage() {
               </h2>
               {paidFlow && (
                 <p style={{ maxWidth: '640px', margin: '0.25rem auto 0', color: 'var(--color-text-primary)', fontWeight: 600 }}>
-                  Your free page is on the way. Now upload up to 5 photos for your paid coloring book.
+                  Your free page is on the way. Now upload up to 5 photos for your personal coloring book.
                 </p>
               )}
               <p style={{ maxWidth: '640px', margin: '0 auto', color: 'var(--color-text-secondary)', lineHeight: 1.6 }}>
-                Drag-and-drop multiple photos. After processing, we’ll send your print-ready book automatically. You can even re-title the photos for the page header.
+                Drag-and-drop your photos here. After processing, we’ll send your print-ready PDF book automatically.
               </p>
               <div style={{ marginTop: '1rem' }}>
-                <label style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--color-text-primary)' }}>Select your Faber‑Castell Polychromos set below:</label>
+                <label style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--color-text-primary)' }}>If you use Faber‑Castell Polychromos pencils, choose your set below:</label>
                 <div style={{ marginTop: '0.5rem', display: 'flex', gap: '0.75rem', justifyContent: 'center', alignItems: 'center', flexWrap: 'wrap' }}>
                   <select
                     value={setSize}
@@ -389,7 +377,7 @@ export function StudioPage() {
 
                 </div>
               <p style={{ fontSize: '0.8rem', color: 'var(--color-text-secondary)' }}>
-                Color palettes match the selected pencil set + expert tips are generated for your exact photos.
+                Color palettes match the selected pencil set + expert tips are generated for your exact photos. Don't use Faber-Castell pencils? No problem! Just match your pencils to the closest suggested color in each photo's palette.
               </p>              
               </div>
             </div>
@@ -497,7 +485,7 @@ export function StudioPage() {
                         {selectedCount} selected • {staged.length} staged
                       </span>
                       <span style={{ fontSize: '0.85rem' }}>
-                        Edit each photo title as you want it to appear in the book (filenames stay unchanged).
+                         You can re-title the photos for the page header. Enter each photo's title as you want it to appear in the book (filenames stay unchanged).
                       </span>
                     </div>
                   </div>
@@ -761,7 +749,7 @@ export function StudioPage() {
               },
               {
                 q: 'How big can my book be?',
-                a: 'Up to 10 photos per book. Each photo becomes a line art page with a paired tips page.',
+                a: 'Up to 5 photos per book. Each photo becomes a line art page with a paired tips page.',
               },
               {
                 q: 'Will you keep my files?',

@@ -485,12 +485,6 @@ export function LandingPage() {
               <li>Download a print-ready PDF and start coloring tonight.</li>
             </ul>
 
-            <div className="hero-cta">
-              <a href="#hero-form" className="btn-primary">
-                Create my free coloring page
-              </a>
-            </div>
-
             <p className="hero-meta">No card. One photo. About 2 minutes.</p>
           </div>
 
@@ -1042,7 +1036,7 @@ export function LandingPage() {
                 }}></img>
           </div>
           <p className="problem-subtitle" style={{ marginBottom: '1rem' }}>
-            Upload up to 10 photos → get a printable book, ready for binding and holiday gifting.
+            Upload up to 5 photos → get a printable book, ready for binding and holiday gifting.
           </p>
           <div
             style={{
