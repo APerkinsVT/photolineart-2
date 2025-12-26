@@ -9,7 +9,7 @@ interface UploadDropzoneProps {
 export function UploadDropzone({ onFilesSelected, currentCount = 0 }: UploadDropzoneProps) {
   const inputRef = useRef<HTMLInputElement | null>(null);
   const [isDragging, setIsDragging] = useState(false);
-  const maxPhotos = 6;
+  const maxPhotos = 10;
   const buttonLabel =
     currentCount > 0 && currentCount < maxPhotos ? 'Add more photos' : 'Choose photos now';
 

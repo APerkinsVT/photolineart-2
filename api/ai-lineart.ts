@@ -8,6 +8,7 @@ import { buildTips, matchToFaberPalette, type ColorTip } from './lib/colorMatche
 import { generateSemanticTips } from './lib/openAiTips.js';
 import { getPalette } from './lib/palette.js';
 import { enhanceTipColors } from './lib/tipEnhancer.js';
+import { getOrCreateCreditsByEmail, updateCreditsByEmail } from './lib/credits.js';
 
 const DEFAULT_PROMPT =
   'Convert this exact photo into clean black line art for a coloring book. ' +
@@ -23,6 +24,8 @@ const MAX_PALETTE_SIZE = 12;
 
 const requestSchema = z.object({
   imageUrl: z.string().url(),
+  email: z.string().email(),
+  context: z.enum(['single', 'book']).optional(),
   options: z
     .object({
       prompt: z.string().optional(),
@@ -99,6 +102,46 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
   }
 
   try {
+    const email = parsed.data.email;
+    const context = parsed.data.context ?? 'single';
+    let gateResult: {
+      status: 'ok' | 'no_credits';
+      generationType?: 'free' | 'credit' | 'book';
+      creditsRemaining?: number;
+      email?: string;
+    } = {
+      status: 'ok',
+    };
+
+    if (context === 'book') {
+      gateResult = {
+        status: 'ok',
+        generationType: 'book',
+      };
+    } else {
+      const credits = await getOrCreateCreditsByEmail(email);
+      if (!credits.free_used_at) {
+        gateResult = {
+          status: 'ok',
+          generationType: 'free',
+          creditsRemaining: credits.credits_remaining,
+          email: credits.email,
+        };
+      } else if (credits.credits_remaining > 0) {
+        gateResult = {
+          status: 'ok',
+          generationType: 'credit',
+          creditsRemaining: Math.max(0, credits.credits_remaining - 1),
+          email: credits.email,
+        };
+      } else {
+        return res.status(200).json({
+          status: 'no_credits',
+          creditsRemaining: 0,
+        });
+      }
+    }
+
     const sourceImageBuffer = await fetchBuffer(parsed.data.imageUrl);
     const rotated = sharp(sourceImageBuffer).rotate();
     const { data: normalizedOriginal, info } = await rotated.toBuffer({ resolveWithObject: true });
@@ -157,7 +200,26 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
       setSize,
     });
 
+    if (gateResult.status === 'ok' && gateResult.generationType && gateResult.generationType !== 'book') {
+      const nowIso = new Date().toISOString();
+      try {
+        if (gateResult.generationType === 'free') {
+          await updateCreditsByEmail(email, { free_used_at: nowIso, updated_at: nowIso });
+        } else if (gateResult.generationType === 'credit') {
+          await updateCreditsByEmail(email, {
+            credits_remaining: gateResult.creditsRemaining ?? 0,
+            updated_at: nowIso,
+          });
+        }
+      } catch (updateError) {
+        console.warn('Credits update failed after successful generation.', updateError);
+      }
+    }
+
     return res.status(200).json({
+      status: 'ok',
+      generationType: gateResult.generationType,
+      creditsRemaining: gateResult.creditsRemaining,
       lineArtUrl: stored,
       analysis,
     });

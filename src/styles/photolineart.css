@@ -650,6 +650,59 @@ a {
   }
 }
 
+/* Who uses PhotoLineArt */
+.who-uses {
+  text-align: center;
+}
+
+.who-uses-subtitle {
+  color: var(--color-text-secondary);
+  margin-top: 0.35rem;
+  margin-bottom: 2.5rem;
+}
+
+.segment-grid {
+  display: grid;
+  gap: 1.5rem;
+}
+
+.segment-card {
+  background: #ffffff;
+  border: 1px solid var(--color-border);
+  border-radius: 1rem;
+  padding: 1.5rem;
+  text-align: left;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  box-shadow: 0 12px 30px rgba(15, 23, 31, 0.06);
+}
+
+.segment-card h4 {
+  margin: 0;
+  font-size: 1.1rem;
+}
+
+.segment-card p {
+  margin: 0;
+  color: var(--color-text-secondary);
+}
+
+.segment-image img {
+  width: 100%;
+  height: 180px;
+  object-fit: cover;
+  border-radius: 0.85rem;
+  border: 1px solid var(--color-border);
+  display: block;
+}
+
+@media (min-width: 900px) {
+  .segment-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
 /* Differentiation / feature grid */
 .feature-heading {
   text-align: center;

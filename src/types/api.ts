@@ -13,6 +13,8 @@ export interface BlobUploadResponse {
 
 export interface AiLineArtRequestBody {
   imageUrl: string;
+  email: string;
+  context?: 'single' | 'book';
   options?: {
     prompt?: string;
     style?: 'clean' | 'sketch';

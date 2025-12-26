@@ -42,6 +42,7 @@ const bodySchema = z.object({
   optIn: z.boolean().optional().default(false),
   rating: z.number().int().min(1).max(5).optional(),
   source: z.string().optional().default('single'),
+  segment: z.string().optional(),
 });
 
 function sendError(res: VercelResponse, status: number, message: string) {
@@ -62,7 +63,13 @@ const supabaseServer =
     ? createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
     : null;
 
-async function appendEmailLog(email: string, optIn: boolean, rating: number | undefined, source: string) {
+async function appendEmailLog(
+  email: string,
+  optIn: boolean,
+  rating: number | undefined,
+  source: string,
+  segment: string | undefined,
+) {
   if (!supabaseServer) {
     console.warn('Supabase client missing; skip email log.');
     return;
@@ -72,6 +79,7 @@ async function appendEmailLog(email: string, optIn: boolean, rating: number | un
     opt_in: !!optIn,
     rating: typeof rating === 'number' ? rating : null,
     source,
+    segment: segment ?? null,
   });
   if (error) {
     console.warn('Supabase email log insert failed (continuing):', error);
@@ -145,7 +153,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     await transporter.sendMail(mailOptions);
 
     try {
-      await appendEmailLog(parsed.to, parsed.optIn, parsed.rating, parsed.source || 'single');
+      await appendEmailLog(parsed.to, parsed.optIn, parsed.rating, parsed.source || 'single', parsed.segment);
     } catch (err) {
       console.warn('Log append failed', err);
     }

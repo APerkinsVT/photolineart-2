@@ -52,7 +52,9 @@ function createEvent(message: string, kind: PhotoItemEvent['kind'] = 'info') {
   };
 }
 
-export function useBatchUploader() {
+export function useBatchUploader(options?: { email?: string; context?: 'single' | 'book' }) {
+  const email = options?.email ?? '';
+  const context = options?.context ?? 'book';
   const [items, setItems] = useState<PhotoItem[]>([]);
   const [portal, setPortal] = useState<PortalInfo | null>(null);
   const [bundle, setBundle] = useState<{ id: string; portalUrl: string; manifestUrl: string } | null>(
@@ -255,15 +257,26 @@ export function useBatchUploader() {
         { event: 'Sending to Replicate + OpenAI…', metric: 'processingStartedAt' },
       );
       try {
+        if (!email) {
+          throw new Error('Missing email for AI processing.');
+        }
         const response = await runWithRetry(
           () =>
             generateLineArt({
               imageUrl: current.blobUrl as string,
+              email,
+              context,
               options: { setSize },
             }),
           notifyError,
           { label: `Line art (${current.fileName})` },
         );
+        if (response.status === 'no_credits') {
+          throw new Error('No credits available for processing.');
+        }
+        if (!response.lineArtUrl || !response.analysis) {
+          throw new Error('Line art response missing required data.');
+        }
         applyAiResult(id, response);
       } catch (error) {
         const message = error instanceof Error ? error.message : 'AI processing failed';
@@ -275,7 +288,7 @@ export function useBatchUploader() {
         notifyError('Line art generation failed. Please retry.', error);
       }
     },
-    [applyAiResult, notifyError, setSize, updateItem],
+    [applyAiResult, context, email, notifyError, setSize, updateItem],
   );
 
   const queueProcessing = useCallback(() => {

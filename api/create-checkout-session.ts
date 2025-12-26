@@ -67,8 +67,14 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     const priceBook6 = getRequiredEnv(
       isProd ? 'STRIPE_PRICE_ID_6_BOOK_LIVE' : 'STRIPE_PRICE_ID_6_BOOK_TEST'
     );
+    const priceCredits3 = process.env[
+      isProd ? 'STRIPE_PRICE_ID_3_CREDITS_LIVE' : 'STRIPE_PRICE_ID_3_CREDITS_TEST'
+    ];
     const offer = parsed.offer ?? 'book6';
-    const priceId = priceBook6;
+    const priceId = offer === 'credits3' ? priceCredits3 : priceBook6;
+    if (!priceId) {
+      return res.status(500).json({ error: 'Stripe price ID missing for offer.' });
+    }
 
     const baseUrl = getBaseUrl(req);
 
@@ -77,11 +83,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     params.append('line_items[0][price]', priceId);
     params.append('line_items[0][quantity]', '1');
     params.set('customer_email', parsed.email);
-    params.set(
-      'success_url',
-      `${baseUrl}/studio?paid=1&email=${encodeURIComponent(parsed.email)}&offer=${encodeURIComponent(offer)}&session_id={CHECKOUT_SESSION_ID}`,
-    );
-    params.set('cancel_url', `${baseUrl}/?checkout=cancelled`);
+    if (offer === 'credits3') {
+      params.set(
+        'success_url',
+        `${baseUrl}/?credits=success&email=${encodeURIComponent(parsed.email)}&offer=${encodeURIComponent(offer)}&session_id={CHECKOUT_SESSION_ID}`,
+      );
+      params.set('cancel_url', `${baseUrl}/?credits=cancelled`);
+    } else {
+      params.set(
+        'success_url',
+        `${baseUrl}/studio?paid=1&email=${encodeURIComponent(parsed.email)}&offer=${encodeURIComponent(offer)}&session_id={CHECKOUT_SESSION_ID}`,
+      );
+      params.set('cancel_url', `${baseUrl}/?checkout=cancelled`);
+    }
     params.append('metadata[offer]', offer);
     params.append('metadata[email]', parsed.email);
 

@@ -14,9 +14,10 @@ function renameFileWithTitle(file: File, title?: string) {
   return new File([file], `${cleanTitle}${ext}`, { type: file.type });
 }
 
-const MAX_BOOK_PHOTOS = 6;
+const MAX_BOOK_PHOTOS = 10;
 
 export function StudioPage() {
+  const [bookEmail, setBookEmail] = useState('');
   const {
     addFiles,
     stats,
@@ -27,14 +28,13 @@ export function StudioPage() {
     clearError,
     setSize,
     setSetSize,
-  } = useBatchUploader();
+  } = useBatchUploader({ email: bookEmail, context: 'book' });
   const [alerts, setAlerts] = useState<string[]>([]);
   const creatorRef = useRef<HTMLDivElement | null>(null);
   type StagedItem = { id: string; file: File; preview: string; selected: boolean; title: string };
   const [staged, setStaged] = useState<StagedItem[]>([]);
   const selectedCount = staged.filter((s) => s.selected).length;
   const [expectedCount, setExpectedCount] = useState(0);
-  const [bookEmail, setBookEmail] = useState('');
   const [bookSending, setBookSending] = useState(false);
   const [checkoutLoading, setCheckoutLoading] = useState(false);
   const [sendStatus, setSendStatus] = useState<string>('');

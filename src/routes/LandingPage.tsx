@@ -1,9 +1,10 @@
 import { useEffect, useMemo, useState, useRef } from 'react';
 import { Download } from 'lucide-react';
+import { useLocation } from 'react-router-dom';
 import { generateLineArt } from '../services/aiService';
 import { downloadPdfForItem, buildPdfDataUrlForItem } from '../services/pdfService';
 import { requestUploadTarget, uploadFileToBlob } from '../services/blobService';
-import type { LineArtResponse } from '../types/ai';
+import type { LineArtAnalysis } from '../types/ai';
 import type { PhotoItem } from '../types/photo';
 
 type FCPaletteEntry = {
@@ -32,6 +33,13 @@ type StatusState =
   | 'ready'
   | 'error';
 
+type ReadyLineArt = {
+  lineArtUrl: string;
+  analysis: LineArtAnalysis;
+  generationType?: 'free' | 'credit';
+  creditsRemaining?: number;
+};
+
 export function LandingPage() {
   const [email, setEmail] = useState('');
   const [photo, setPhoto] = useState<File | null>(null);
@@ -43,13 +51,16 @@ export function LandingPage() {
   const [rating, setRating] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
   const [isDownloading, setIsDownloading] = useState(false);
-  const [offerModalOpen, setOfferModalOpen] = useState(false);
-  const [offerChoice, setOfferChoice] = useState<'paid' | 'free' | ''>('');
-  const [checkoutLoading, setCheckoutLoading] = useState(false);
+  const [creditsModalOpen, setCreditsModalOpen] = useState(false);
+  const [creditsCheckoutLoading, setCreditsCheckoutLoading] = useState(false);
+  const [creditsRemaining, setCreditsRemaining] = useState<number | null>(null);
+  const [generationType, setGenerationType] = useState<'free' | 'credit' | ''>('');
   const [feedback, setFeedback] = useState<FeedbackState>({ message: '', type: '' });
-  const [result, setResult] = useState<LineArtResponse | null>(null);
+  const [result, setResult] = useState<ReadyLineArt | null>(null);
   const [status, setStatus] = useState<StatusState>('idle');
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
+  const [emailError, setEmailError] = useState('');
+  const location = useLocation();
   const statusTimers = useRef<number[]>([]);
   const trackEvent = (metaEvent: string, gaEvent: string, payload?: Record<string, any>) => {
     const win = typeof window !== 'undefined' ? (window as any) : null;
@@ -68,6 +79,7 @@ export function LandingPage() {
       }
     }
   };
+  const buildSegmentLink = (value: string) => `/?seg=${encodeURIComponent(value)}#hero-form`;
 
   const fcPaletteMap = useMemo(() => {
     const map: Record<string, FCPaletteEntry> = {};
@@ -76,6 +88,22 @@ export function LandingPage() {
     });
     return map;
   }, [fcPalette]);
+
+  const segment = useMemo(() => {
+    if (typeof window === 'undefined') return '';
+    const raw = new URLSearchParams(location.search).get('seg');
+    return raw ? raw.trim().toLowerCase() : '';
+  }, [location.search]);
+
+  const creditsStatus = useMemo(() => {
+    if (typeof window === 'undefined') return '';
+    return new URLSearchParams(location.search).get('credits') ?? '';
+  }, [location.search]);
+
+  const creditsEmail = useMemo(() => {
+    if (typeof window === 'undefined') return '';
+    return new URLSearchParams(location.search).get('email') ?? '';
+  }, [location.search]);
 
   const statusMessages: Record<StatusState, string> = {
     idle: '',
@@ -117,12 +145,40 @@ export function LandingPage() {
   }, []);
 
   useEffect(() => {
-    if (!offerModalOpen) return;
+    if (!location.hash) return;
+    const id = location.hash.replace('#', '');
+    if (!id) return;
+    const handle = window.setTimeout(() => {
+      const target = document.getElementById(id);
+      if (target) {
+        target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      }
+    }, 0);
+    return () => window.clearTimeout(handle);
+  }, [location.hash]);
+
+  useEffect(() => {
+    if (!creditsStatus) return;
+    if (creditsStatus === 'success') {
+      setFeedback({ message: 'Credits added! You can generate your next page now.', type: 'success' });
+    } else if (creditsStatus === 'cancelled') {
+      setFeedback({ message: 'Checkout cancelled. You can try again anytime.', type: 'error' });
+    }
+  }, [creditsStatus]);
+
+  useEffect(() => {
+    if (creditsEmail && !email) {
+      setEmail(creditsEmail);
+    }
+  }, [creditsEmail, email]);
+
+  useEffect(() => {
+    if (!creditsModalOpen) return;
     const previousOverflow = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     const handleKey = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
-        closeOfferModal();
+        closeCreditsModal();
       }
     };
     window.addEventListener('keydown', handleKey);
@@ -130,9 +186,9 @@ export function LandingPage() {
       document.body.style.overflow = previousOverflow;
       window.removeEventListener('keydown', handleKey);
     };
-  }, [offerModalOpen]);
+  }, [creditsModalOpen]);
 
-  const buildPhotoItemFromResult = (res: LineArtResponse): PhotoItem => {
+  const buildPhotoItemFromResult = (res: ReadyLineArt): PhotoItem => {
     const fileNameFromUrl =
       originalFileName || photo?.name || res.analysis.sourceImageUrl?.split('/').pop() || 'photolineart';
     const fallbackSize = photo?.size ?? 0;
@@ -158,6 +214,12 @@ export function LandingPage() {
       setFeedback({ message: 'Please provide a photo.', type: 'error' });
       return;
     }
+    if (!email.trim()) {
+      setEmailError('Please enter your email to continue.');
+      setFeedback({ message: 'Please enter your email to continue.', type: 'error' });
+      return;
+    }
+    setEmailError('');
     trackEvent(photo ? 'LP_GetLineArt' : 'LP_CreateFreePage', 'lp_form_submit', { has_photo: !!photo });
 
     const formatTitle = (val: string) => {
@@ -175,8 +237,9 @@ export function LandingPage() {
     setIsLoading(true);
     setResult(null);
     setDownloadComplete(false);
-    setOfferChoice('');
-    setOfferModalOpen(false);
+    setCreditsModalOpen(false);
+    setGenerationType('');
+    setCreditsRemaining(null);
     const formattedTitle = formatTitle(customTitle || photo.name || 'photolineart');
     setOriginalFileName(formattedTitle);
     setStatus('uploading');
@@ -228,6 +291,8 @@ export function LandingPage() {
 
       const response = await generateLineArt({
         imageUrl,
+        email: email.trim(),
+        context: 'single',
         options: {
           prompt:
             'Convert this exact photo into clean black line art for a coloring book. Preserve composition and subjects; outlines only; minimal interior shading; white background.',
@@ -235,14 +300,34 @@ export function LandingPage() {
         },
       });
 
+      if (response.status === 'no_credits') {
+        setFeedback({
+          message: 'You’ve used your free page. Grab a 3‑page pack to keep going.',
+          type: 'error',
+        });
+        setStatus('idle');
+        setCreditsModalOpen(true);
+        return;
+      }
+
+      if (!response.lineArtUrl || !response.analysis) {
+        throw new Error('Line art response missing required data.');
+      }
+
       setStatus('finalizing');
-      setResult(response);
+      setGenerationType(response.generationType ?? '');
+      setCreditsRemaining(typeof response.creditsRemaining === 'number' ? response.creditsRemaining : null);
+      setResult({
+        lineArtUrl: response.lineArtUrl,
+        analysis: response.analysis,
+        generationType: response.generationType,
+        creditsRemaining: response.creditsRemaining,
+      });
       setFeedback({
         message: 'Success! Your file and color guide have been generated!',
         type: 'success',
       });
       setStatus('ready');
-      setEmail('');
       setPhoto(null);
       setCustomTitle('');
     } catch (error: unknown) {
@@ -263,33 +348,27 @@ export function LandingPage() {
     }
   };
 
-  const openOfferModal = () => {
-    setOfferModalOpen(true);
-    trackEvent('LP_OfferModalOpen', 'lp_offer_modal_open');
+  const openCreditsModal = () => {
+    setCreditsModalOpen(true);
+    trackEvent('LP_CreditsModalOpen', 'lp_credits_modal_open');
   };
 
-  const closeOfferModal = () => {
-    setOfferModalOpen(false);
+  const closeCreditsModal = () => {
+    setCreditsModalOpen(false);
   };
 
-  const chooseOffer = (choice: 'paid' | 'free') => {
-    setOfferChoice(choice);
-    setOfferModalOpen(false);
-    trackEvent(
-      choice === 'paid' ? 'LP_OfferPaidSelect' : 'LP_OfferFreeSelect',
-      choice === 'paid' ? 'lp_offer_paid' : 'lp_offer_free',
-    );
-  };
-
-  const startCheckout = async () => {
-    if (!email) return;
+  const startCreditsCheckout = async () => {
+    if (!email.trim()) {
+      setEmailError('Please enter your email to continue.');
+      return;
+    }
     try {
-      setCheckoutLoading(true);
-      trackEvent('LP_CheckoutStart', 'lp_checkout_start', { offer: 'book6' });
+      setCreditsCheckoutLoading(true);
+      trackEvent('LP_CreditsCheckoutStart', 'lp_credits_checkout_start', { offer: 'credits3' });
       const resp = await fetch('/api/create-checkout-session', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, offer: 'book6' }),
+        body: JSON.stringify({ email: email.trim(), offer: 'credits3' }),
       });
       if (!resp.ok) {
         const text = await resp.text();
@@ -302,18 +381,22 @@ export function LandingPage() {
         throw new Error('Missing checkout URL');
       }
     } catch (err) {
-      console.error('Checkout failed', err);
+      console.error('Credits checkout failed', err);
       setFeedback({
         message: 'Unable to start checkout right now. Please try again.',
         type: 'error',
       });
     } finally {
-      setCheckoutLoading(false);
+      setCreditsCheckoutLoading(false);
     }
   };
 
   const handleFreeDownload = async () => {
-    if (!email || !result) return;
+    if (!email.trim()) {
+      setEmailError('Please enter your email to continue.');
+      return;
+    }
+    if (!result) return;
     try {
       setIsDownloading(true);
       const item = buildPhotoItemFromResult(result);
@@ -321,21 +404,21 @@ export function LandingPage() {
       setDownloadComplete(true);
       try {
         const { dataUrl, fileName } = await buildPdfDataUrlForItem(item, window.location.origin);
-        const upgradeUrl = `${window.location.origin}/studio?offer=book6`;
         await fetch('/api/send-pdf', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            to: email,
+            to: email.trim(),
             pdfBase64: dataUrl,
             filename: fileName,
             subject: 'Your PhotoLineArt coloring page',
             optIn: newsletterOptIn,
             rating: rating || undefined,
             source: 'single',
+            segment: segment || undefined,
             text: [
               'Your coloring page is ready. The PDF is attached.',
-              `Want a 6‑photo coloring book? Build it here: ${upgradeUrl}`,
+              'Want more pages? Grab a 3‑page pack any time at photolineart.com.',
               '',
               'Privacy first: we delete your uploaded photo and generated line art right after sending this download.',
               'If you ever want to make another page, just upload again.',
@@ -370,59 +453,6 @@ export function LandingPage() {
     }
   };
 
-  const sendFreePageEmailOnly = async () => {
-    if (!email || !result) return;
-    try {
-      const item = buildPhotoItemFromResult(result);
-      const { dataUrl, fileName } = await buildPdfDataUrlForItem(item, window.location.origin);
-      await fetch('/api/send-pdf', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          to: email,
-          pdfBase64: dataUrl,
-          filename: fileName,
-          subject: 'Your PhotoLineArt coloring page',
-          optIn: newsletterOptIn,
-          rating: rating || undefined,
-          source: 'single',
-          text: [
-            'Your free coloring page is ready. The PDF is attached.',
-            'Your 6‑photo coloring book will be ready after checkout.',
-            '',
-            'Privacy first: we delete your uploaded photo and generated line art right after sending this download.',
-          ].join('\n'),
-        }),
-      });
-      try {
-        const urlsToDelete: string[] = [];
-        if (result.analysis.sourceImageUrl) urlsToDelete.push(result.analysis.sourceImageUrl);
-        if (result.lineArtUrl) urlsToDelete.push(result.lineArtUrl);
-        if (urlsToDelete.length > 0) {
-          await fetch('/api/delete-asset', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ urls: urlsToDelete }),
-          });
-        }
-      } catch (delErr) {
-        console.warn('Asset delete failed (continuing):', delErr);
-      }
-    } catch (err) {
-      console.warn('Email-only send failed (continuing):', err);
-    }
-  };
-
-  const handleOfferSelection = async (choice: 'paid' | 'free') => {
-    chooseOffer(choice);
-    if (choice === 'paid') {
-      await sendFreePageEmailOnly();
-      await startCheckout();
-      return;
-    }
-    await handleFreeDownload();
-  };
-
   return (
     <div className="page">
       {/* Header */}
@@ -453,15 +483,14 @@ export function LandingPage() {
       <section className="section section--base">
         <div className="container hero">
           <div className="hero-inner">
-            <h1 className="hero-heading">Upload a favorite photo and get a high‑fidelity coloring book page.</h1>
+            <h1 className="hero-heading">Turn your favorite photos into printable coloring pages.</h1>
 
             <p className="hero-lead">
-              In minutes, our app turns a favorite photo into high-resolution line art,{' '}
-              complete with specific <strong>Faber-Castell pencil numbers</strong> and expert tips. Not generic patterns. Your
-              cherished moments, on paper.
+              Upload a photo and we turn it into high-resolution line art, plus specific{' '}
+              <strong>Faber-Castell pencil numbers</strong> and expert tips. Not generic patterns—your moments, on paper.
             </p>
             <p className="hero-lead">
-              First page is <strong>FREE</strong> - no card needed.
+              Your first page is <strong>FREE</strong> — extra pages are <strong>3 for $5</strong>.
             </p>
 
             <div style={{ display: 'flex', justifyContent: 'center', margin: '18px auto 20px' }}>
@@ -485,7 +514,7 @@ export function LandingPage() {
               <li>Download a print-ready PDF and start coloring today.</li>
             </ul>
 
-            <p className="hero-meta">No card. One photo. About 2 minutes.</p>
+            <p className="hero-meta">No card for your first page. One photo. About 2 minutes.</p>
           </div>
 
           {/* Hero form / result card */}
@@ -660,28 +689,20 @@ export function LandingPage() {
                     <button
                       className="btn-primary"
                       type="button"
-                      disabled={isDownloading || checkoutLoading}
+                      disabled={isDownloading}
                       onClick={async () => {
                         if (downloadComplete) {
                           setResult(null);
                           setDownloadComplete(false);
-                          setOfferChoice('');
-                          setEmail('');
-                          return;
-                        }
-                        if (!offerChoice || !email) {
-                          openOfferModal();
-                          return;
-                        }
-                        if (offerChoice === 'paid') {
-                          await startCheckout();
+                          setGenerationType('');
+                          setCreditsRemaining(null);
                           return;
                         }
                         await handleFreeDownload();
                       }}
                       style={{
-                        opacity: !isDownloading && !checkoutLoading ? 1 : 0.6,
-                        cursor: !isDownloading && !checkoutLoading ? 'pointer' : 'not-allowed',
+                        opacity: !isDownloading ? 1 : 0.6,
+                        cursor: !isDownloading ? 'pointer' : 'not-allowed',
                       }}
                     >
                       <Download size={18} style={{ marginRight: '0.5rem' }} />
@@ -691,12 +712,22 @@ export function LandingPage() {
                           : 'Create another'
                         : isDownloading
                           ? 'Preparing PDF...'
-                          : checkoutLoading
-                            ? 'Starting checkout...'
-                            : offerChoice === 'paid'
-                              ? 'Continue to payment'
-                              : 'Download your free page'}
+                          : 'Download your page'}
                     </button>
+                    {generationType === 'credit' && typeof creditsRemaining === 'number' && (
+                      <div style={{ textAlign: 'center', color: 'var(--color-text-secondary)', fontWeight: 600 }}>
+                        You have {creditsRemaining} page{creditsRemaining === 1 ? '' : 's'} remaining.
+                      </div>
+                    )}
+                    {generationType === 'free' && (
+                      <button
+                        type="button"
+                        className="btn-secondary"
+                        onClick={openCreditsModal}
+                      >
+                        Get 3 more pages for $5
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -745,6 +776,51 @@ export function LandingPage() {
                       <p className="form-hint">We’ll use this as the page title. If left blank, we’ll use your file name.</p>
                     </div>
                   )}
+
+                  <div className="form-field">
+                    <label className="form-label" htmlFor="email">
+                      Email for your download
+                    </label>
+                    <input
+                      className="input-text"
+                      id="email"
+                      name="email"
+                      type="email"
+                      placeholder="you@email.com"
+                      value={email}
+                      onChange={(e) => {
+                        setEmail(e.target.value);
+                        if (emailError) setEmailError('');
+                      }}
+                      required
+                    />
+                    {emailError ? (
+                      <p className="form-hint" style={{ color: '#b91c1c' }}>
+                        {emailError}
+                      </p>
+                    ) : (
+                      <p className="form-hint">We’ll email your PDF and keep your page private.</p>
+                    )}
+                    <label
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.6rem',
+                        fontSize: '0.9rem',
+                        color: 'var(--color-text-primary)',
+                        fontWeight: 500,
+                        marginTop: '0.6rem',
+                      }}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={newsletterOptIn}
+                        onChange={(e) => setNewsletterOptIn(e.target.checked)}
+                        style={{ width: '16px', height: '16px' }}
+                      />
+                      <span>Send me advanced coloring ideas and new layout styles</span>
+                    </label>
+                  </div>
 
                   {status !== 'idle' && status !== 'ready' && status !== 'error' && (
                     <div
@@ -952,7 +1028,11 @@ export function LandingPage() {
               </div>
               <button
                 type="button"
-                onClick={() => setResult(null)}
+                onClick={() => {
+                  setResult(null);
+                  setGenerationType('');
+                  setCreditsRemaining(null);
+                }}
                 style={{
                   background: 'none',
                   border: 'none',
@@ -1007,11 +1087,8 @@ export function LandingPage() {
       {/* Book teaser */}
       <section className="section section--base">
         <div className="container" style={{ textAlign: 'center', maxWidth: '860px' }}>
-          <h1 className="section-heading" style={{ marginBottom: '1.4rem' }}>
-            Like what you see?
-          </h1>
           <h2 className="section-heading" style={{ marginBottom: '2.4rem' }}>
-            Build your custom coloring book from 6 favorite photos... just $19
+            Want a full 6‑photo gift book?
           </h2>
           <div
             style={{
@@ -1041,7 +1118,7 @@ export function LandingPage() {
                 }}></img>
           </div>
           <p className="problem-subtitle" style={{ marginBottom: '1rem' }}>
-            Upload up to 6 photos → get a printable book, ready for binding and holiday gifting.
+            Upload up to 6 photos → get a printable book, ready for binding and gifting.
           </p>
           <div
             style={{
@@ -1061,8 +1138,90 @@ export function LandingPage() {
             className="btn-primary"
             onClick={() => trackEvent('LP_SeeBooks', 'lp_see_books')}
           >
-            Make my 6-photo coloring book now!
+            Learn more about the book
           </a>
+        </div>
+      </section>
+
+      {/* Who uses PhotoLineArt */}
+      <section id="who-uses" className="section section--white">
+        <div className="container who-uses">
+          <h2 className="section-heading">Who uses PhotoLineArt?</h2>
+          <h3 className="who-uses-subtitle">Four ways people turn personal photos into pages worth coloring.</h3>
+
+          <div className="segment-grid">
+            <article id="families" className="segment-card">
+              <div className="segment-image">
+                <img src="/images/boys-at-lake.png" alt="Family memory coloring page example" />
+              </div>
+              <h4>For parents & grandparents</h4>
+              <p>
+                Turn everyday family moments into pages you can color together or gift to grandparents. Simple, heartfelt, and
+                easy to print.
+              </p>
+              <a
+                className="btn-secondary"
+                href={buildSegmentLink('families')}
+                onClick={() => trackEvent('LP_SegmentFamilies', 'lp_segment_families')}
+              >
+                Create a family page
+              </a>
+            </article>
+
+            <article id="couples" className="segment-card">
+              <div className="segment-image">
+                <img src="/images/travel-phone-photo-pair.png" alt="Couples photo coloring page example" />
+              </div>
+              <h4>For couples & anniversaries</h4>
+              <p>
+                Give your favorite photo the slow, thoughtful treatment. Perfect for anniversaries, weddings, or a shared date
+                night ritual.
+              </p>
+              <a
+                className="btn-secondary"
+                href={buildSegmentLink('couples')}
+                onClick={() => trackEvent('LP_SegmentCouples', 'lp_segment_couples')}
+              >
+                Create a couples page
+              </a>
+            </article>
+
+            <article id="pets" className="segment-card">
+              <div className="segment-image">
+                <img src="/images/corgi-dog.png" alt="Pet photo coloring page example" />
+              </div>
+              <h4>For pets as family</h4>
+              <p>
+                Capture the pose you love most. Detailed line art makes fur, markings, and eyes feel alive without turning
+                into clip art.
+              </p>
+              <a
+                className="btn-secondary"
+                href={buildSegmentLink('pets')}
+                onClick={() => trackEvent('LP_SegmentPets', 'lp_segment_pets')}
+              >
+                Create a pet page
+              </a>
+            </article>
+
+            <article id="places" className="segment-card">
+              <div className="segment-image">
+                <img src="/images/dory-photo-preview.png" alt="Special place coloring page example" />
+              </div>
+              <h4>For special places</h4>
+              <p>
+                Trails, cabins, hometown streets, favorite cafés. Turn a place into a quiet, printable memory you can color
+                and keep.
+              </p>
+              <a
+                className="btn-secondary"
+                href={buildSegmentLink('places')}
+                onClick={() => trackEvent('LP_SegmentPlaces', 'lp_segment_places')}
+              >
+                Create a places page
+              </a>
+            </article>
+          </div>
         </div>
       </section>
 
@@ -1365,34 +1524,37 @@ export function LandingPage() {
         </div>
       </footer>
 
-      {offerModalOpen && (
+      {creditsModalOpen && (
         <div
           className="modal-overlay"
           onClick={(event) => {
             if (event.target === event.currentTarget) {
-              closeOfferModal();
+              closeCreditsModal();
             }
           }}
         >
-          <div className="modal-card" role="dialog" aria-modal="true" aria-labelledby="offer-title">
-            <button type="button" className="modal-close" onClick={closeOfferModal} aria-label="Close">
+          <div className="modal-card" role="dialog" aria-modal="true" aria-labelledby="credits-title">
+            <button type="button" className="modal-close" onClick={closeCreditsModal} aria-label="Close">
               ×
             </button>
-            <h3 id="offer-title" className="modal-title">
-              Want a 6‑photo coloring book for $19?
+            <h3 id="credits-title" className="modal-title">
+              Need more pages?
             </h3>
             <p className="modal-subtitle">
-              Get a printable book with custom palettes and tips for every photo. You’ll enter your email once either way.
+              Get 3 more single-photo pages for $5. Credits stay tied to your email so you can come back anytime.
             </p>
             <div style={{ display: 'grid', gap: '0.65rem' }}>
-              <label htmlFor="modal-email" style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--color-text-primary)' }}>
-                Enter email to receive your PDF + expert coloring tips
+              <label htmlFor="credits-email" style={{ fontSize: '0.9rem', fontWeight: 600, color: 'var(--color-text-primary)' }}>
+                Email for your credits
               </label>
               <input
-                id="modal-email"
+                id="credits-email"
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={(e) => {
+                  setEmail(e.target.value);
+                  if (emailError) setEmailError('');
+                }}
                 placeholder="you@email.com"
                 style={{
                   width: '100%',
@@ -1403,32 +1565,26 @@ export function LandingPage() {
                 }}
                 required
               />
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.6rem', fontSize: '0.9rem', color: 'var(--color-text-primary)', fontWeight: 500 }}>
-                <input
-                  type="checkbox"
-                  checked={newsletterOptIn}
-                  onChange={(e) => setNewsletterOptIn(e.target.checked)}
-                  style={{ width: '16px', height: '16px' }}
-                />
-                <span>Send me advanced coloring ideas and new layout styles</span>
-              </label>
+              {emailError && (
+                <p style={{ margin: 0, fontSize: '0.85rem', color: '#b91c1c' }}>{emailError}</p>
+              )}
               <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>
-                We’ll email the high-res PDF and tips. No spam, just your download link.
+                You’ll be able to use credits whenever you upload a new photo.
               </p>
             </div>
 
             <div className="modal-actions">
-              <button type="button" className="btn-primary" onClick={() => handleOfferSelection('paid')} disabled={!email}>
-                Yes — upgrade to 6 photos for $19
+              <button
+                type="button"
+                className="btn-primary"
+                onClick={startCreditsCheckout}
+                disabled={!email.trim() || creditsCheckoutLoading}
+              >
+                {creditsCheckoutLoading ? 'Starting checkout…' : 'Get 3 pages for $5'}
               </button>
-              <button type="button" className="btn-secondary" onClick={() => handleOfferSelection('free')} disabled={!email}>
-                No thanks — send my free page
+              <button type="button" className="btn-secondary" onClick={closeCreditsModal}>
+                Maybe later
               </button>
-              {!email && (
-                <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>
-                  Enter your email above to continue.
-                </p>
-              )}
             </div>
           </div>
         </div>

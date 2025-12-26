@@ -28,6 +28,9 @@ export interface LineArtAnalysis {
 }
 
 export interface LineArtResponse {
-  lineArtUrl: string;
-  analysis: LineArtAnalysis;
+  status?: 'ok' | 'no_credits';
+  generationType?: 'free' | 'credit' | 'book';
+  creditsRemaining?: number;
+  lineArtUrl?: string;
+  analysis?: LineArtAnalysis;
 }
