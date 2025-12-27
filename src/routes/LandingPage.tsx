@@ -62,6 +62,7 @@ export function LandingPage() {
   const [emailError, setEmailError] = useState('');
   const location = useLocation();
   const statusTimers = useRef<number[]>([]);
+  const resultAnalysis = result?.analysis;
   const trackEvent = (metaEvent: string, gaEvent: string, payload?: Record<string, any>) => {
     const win = typeof window !== 'undefined' ? (window as any) : null;
     if (win?.fbq) {
@@ -310,18 +311,23 @@ export function LandingPage() {
         return;
       }
 
+      const nextType =
+        response.generationType === 'free' || response.generationType === 'credit'
+          ? response.generationType
+          : '';
+      const nextCredits = typeof response.creditsRemaining === 'number' ? response.creditsRemaining : null;
       if (!response.lineArtUrl || !response.analysis) {
         throw new Error('Line art response missing required data.');
       }
 
       setStatus('finalizing');
-      setGenerationType(response.generationType ?? '');
-      setCreditsRemaining(typeof response.creditsRemaining === 'number' ? response.creditsRemaining : null);
+      setGenerationType(nextType);
+      setCreditsRemaining(nextCredits);
       setResult({
         lineArtUrl: response.lineArtUrl,
         analysis: response.analysis,
-        generationType: response.generationType,
-        creditsRemaining: response.creditsRemaining,
+        generationType: nextType || undefined,
+        creditsRemaining: nextCredits ?? undefined,
       });
       setFeedback({
         message: 'Success! Your file and color guide have been generated!',
@@ -362,6 +368,12 @@ export function LandingPage() {
       setEmailError('Please enter your email to continue.');
       return;
     }
+    if (result && !downloadComplete) {
+      const ok = await handleFreeDownload();
+      if (!ok) {
+        return;
+      }
+    }
     try {
       setCreditsCheckoutLoading(true);
       trackEvent('LP_CreditsCheckoutStart', 'lp_credits_checkout_start', { offer: 'credits3' });
@@ -391,12 +403,12 @@ export function LandingPage() {
     }
   };
 
-  const handleFreeDownload = async () => {
+  const handleFreeDownload = async (): Promise<boolean> => {
     if (!email.trim()) {
       setEmailError('Please enter your email to continue.');
-      return;
+      return false;
     }
-    if (!result) return;
+    if (!result || !resultAnalysis) return false;
     try {
       setIsDownloading(true);
       const item = buildPhotoItemFromResult(result);
@@ -430,7 +442,7 @@ export function LandingPage() {
       }
       try {
         const urlsToDelete: string[] = [];
-        if (result.analysis.sourceImageUrl) urlsToDelete.push(result.analysis.sourceImageUrl);
+      if (resultAnalysis.sourceImageUrl) urlsToDelete.push(resultAnalysis.sourceImageUrl);
         if (result.lineArtUrl) urlsToDelete.push(result.lineArtUrl);
         if (urlsToDelete.length > 0) {
           await fetch('/api/delete-asset', {
@@ -442,12 +454,14 @@ export function LandingPage() {
       } catch (delErr) {
         console.warn('Asset delete failed (continuing):', delErr);
       }
+      return true;
     } catch (err) {
       console.error('Download failed', err);
       setFeedback({
         message: 'Unable to generate PDF right now. Please try again.',
         type: 'error',
       });
+      return false;
     } finally {
       setIsDownloading(false);
     }
@@ -534,8 +548,8 @@ export function LandingPage() {
                   </div>
                     <div style={{ display: 'flex', justifyContent: 'center' }}>
                     <div style={{ width: '120px', height: '120px', overflow: 'hidden', borderRadius: '0.75rem', border: '1px solid var(--color-border)' }}>
-                      <img
-                        src={result.analysis.sourceImageUrl}
+      <img
+                        src={resultAnalysis?.sourceImageUrl}
                         alt="Original Reference"
                         style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
                       />
@@ -618,7 +632,7 @@ export function LandingPage() {
                       Expert Tips
                     </h3>
                     <div style={{ display: 'grid', gap: '0.75rem', maxHeight: '320px', overflowY: 'auto', paddingRight: '0.5rem' }}>
-                      {result.analysis.tips.map((tip, i) => (
+                      {(resultAnalysis?.tips ?? []).map((tip, i) => (
                         <div
                           key={i}
                           style={{
@@ -1152,11 +1166,11 @@ export function LandingPage() {
           <div className="segment-grid">
             <article id="families" className="segment-card">
               <div className="segment-image">
-                <img src="/images/boys-at-lake.png" alt="Family memory coloring page example" />
+                <img src="/images/mother-daughter.jpg" alt="Mother and daughter coloring page example" />
               </div>
               <h4>For parents & grandparents</h4>
               <p>
-                Turn everyday family moments into pages you can color together or gift to grandparents. Simple, heartfelt, and
+                Turn everyday family moments into pages you can color together or gift to grandparents. Simple, heartfelt, 
                 easy to print.
               </p>
               <a
@@ -1170,7 +1184,7 @@ export function LandingPage() {
 
             <article id="couples" className="segment-card">
               <div className="segment-image">
-                <img src="/images/travel-phone-photo-pair.png" alt="Couples photo coloring page example" />
+                <img src="/images/couple.jpg" alt="Couples photo coloring page example" />
               </div>
               <h4>For couples & anniversaries</h4>
               <p>
@@ -1188,7 +1202,7 @@ export function LandingPage() {
 
             <article id="pets" className="segment-card">
               <div className="segment-image">
-                <img src="/images/corgi-dog.png" alt="Pet photo coloring page example" />
+                <img src="/images/frisbee-dog.jpg" alt="Pet photo coloring page example" />
               </div>
               <h4>For pets as family</h4>
               <p>
@@ -1206,11 +1220,11 @@ export function LandingPage() {
 
             <article id="places" className="segment-card">
               <div className="segment-image">
-                <img src="/images/dory-photo-preview.png" alt="Special place coloring page example" />
+                <img src="/images/dory-photo-preview.jpg" alt="Special place coloring page example" />
               </div>
               <h4>For special places</h4>
               <p>
-                Trails, cabins, hometown streets, favorite cafés. Turn a place into a quiet, printable memory you can color
+                Retreats, cabins by the lake, favorite cafés. Turn a place into a quiet, printable memory you can color
                 and keep.
               </p>
               <a
@@ -1570,6 +1584,9 @@ export function LandingPage() {
               )}
               <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>
                 You’ll be able to use credits whenever you upload a new photo.
+              </p>
+              <p style={{ margin: 0, fontSize: '0.85rem', color: 'var(--color-text-secondary)' }}>
+                Have a promo code? You can add it on the Stripe checkout page.
               </p>
             </div>
 

@@ -82,6 +82,7 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     params.set('mode', 'payment');
     params.append('line_items[0][price]', priceId);
     params.append('line_items[0][quantity]', '1');
+    params.set('allow_promotion_codes', 'true');
     params.set('customer_email', parsed.email);
     if (offer === 'credits3') {
       params.set(

@@ -9,7 +9,7 @@ import type { ManifestItem } from '../types/manifest';
 import { downscaleImageFile } from '../utils/imageDownscale';
 import { requestUploadTarget, uploadFileToBlob } from '../services/blobService';
 import { generateLineArt } from '../services/aiService';
-import type { LineArtResponse } from '../types/ai';
+import type { LineArtAnalysis } from '../types/ai';
 import {
   initPortal,
   type PortalInfo,
@@ -217,7 +217,7 @@ export function useBatchUploader(options?: { email?: string; context?: 'single' 
   );
 
   const applyAiResult = useCallback(
-    (id: string, result: LineArtResponse) => {
+    (id: string, result: { lineArtUrl: string; analysis: LineArtAnalysis }) => {
       updateItem(
         id,
         {
@@ -274,10 +274,12 @@ export function useBatchUploader(options?: { email?: string; context?: 'single' 
         if (response.status === 'no_credits') {
           throw new Error('No credits available for processing.');
         }
-        if (!response.lineArtUrl || !response.analysis) {
+        const lineArtUrl = response.lineArtUrl;
+        const analysis = response.analysis;
+        if (!lineArtUrl || !analysis) {
           throw new Error('Line art response missing required data.');
         }
-        applyAiResult(id, response);
+        applyAiResult(id, { lineArtUrl, analysis });
       } catch (error) {
         const message = error instanceof Error ? error.message : 'AI processing failed';
         updateItem(
